@@ -42,7 +42,7 @@ function render(tabData) {
   document.getElementById('item-list').innerHTML = groups.map(group => {
     const rows = group.items.map(item => {
       const claimer = item.claimedBy ? tab.guests.find(g => g.id === item.claimedBy) : null;
-      const isMe = item.claimedBy === myGuestId;
+      const isMe = myGuestId !== null && item.claimedBy === myGuestId;
       const isTaken = item.claimedBy && !isMe;
       const cls = isMe ? 'claimed-mine' : isTaken ? 'claimed-other' : (!myGuestId ? 'no-guest' : '');
       const check = (isMe || isTaken) ? '✓' : '';
