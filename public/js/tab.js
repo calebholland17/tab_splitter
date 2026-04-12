@@ -1,3 +1,4 @@
+const tabId = window.location.pathname.split('/').pop();
 let tab = null;
 let myGuestId = null;
 
@@ -8,7 +9,8 @@ function esc(s) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function groupItems(items) {
@@ -22,14 +24,12 @@ function groupItems(items) {
 
 function render(tabData) {
   tab = tabData;
-
   document.getElementById('tab-name').textContent = tab.name;
   document.getElementById('tab-meta').textContent =
     `${tab.guests.length} guests · ${fmt(tab.charges.total)} total`;
-  document.getElementById('payment-handle').textContent = tab.payment.handle;
+  document.getElementById('payment-handle').textContent  = tab.payment.handle;
   document.getElementById('payment-platform').textContent = tab.payment.platform;
 
-  // Name chips
   document.getElementById('name-chips').innerHTML = tab.guests.map(g => `
     <div class="chip ${g.id === myGuestId ? 'active' : ''} ${g.paid ? 'paid' : ''}"
       onclick="selectGuest('${esc(g.id)}')">
@@ -37,18 +37,18 @@ function render(tabData) {
     </div>
   `).join('');
 
-  // Items grouped by name
   const groups = groupItems(tab.items);
   document.getElementById('item-list').innerHTML = groups.map(group => {
     const rows = group.items.map(item => {
       const claimer = item.claimedBy ? tab.guests.find(g => g.id === item.claimedBy) : null;
-      const isMe = myGuestId !== null && item.claimedBy === myGuestId;
+      const isMe    = myGuestId !== null && item.claimedBy === myGuestId;
       const isTaken = item.claimedBy && !isMe;
-      const cls = isMe ? 'claimed-mine' : isTaken ? 'claimed-other' : (!myGuestId ? 'no-guest' : '');
-      const check = (isMe || isTaken) ? '✓' : '';
-      const sub = isMe ? 'Claimed by you' : (claimer ? esc(claimer.name) : '');
-      const onclick = isTaken ? '' : myGuestId ? `onclick="toggle('${item.id}')"` : `onclick="promptName()"`;
-
+      const cls     = isMe ? 'claimed-mine' : isTaken ? 'claimed-other' : (!myGuestId ? 'no-guest' : '');
+      const check   = (isMe || isTaken) ? '✓' : '';
+      const sub     = isMe ? 'Claimed by you' : (claimer ? esc(claimer.name) : '');
+      const onclick = isTaken ? '' : myGuestId
+        ? `onclick="toggle('${item.id}')"`
+        : `onclick="promptName()"`;
       return `<div class="item ${cls}" ${onclick} data-id="${item.id}">
         <div class="item-check">${check}</div>
         <div class="item-info">
@@ -61,16 +61,14 @@ function render(tabData) {
     return `<div class="group-header">${esc(group.name)} — ${fmt(group.price)} ea</div>${rows}`;
   }).join('');
 
-  // Charges
   document.getElementById('charges-section').innerHTML = `
     <div class="charge-row"><span>Subtotal</span><span>${fmt(tab.charges.subtotal)}</span></div>
     <div class="charge-row"><span>Surcharge</span><span>${fmt(tab.charges.surcharge)}</span></div>
     <div class="charge-row"><span>Tax</span><span>${fmt(tab.charges.tax)}</span></div>
-    <div class="charge-row"><span>Gratuity (20%)</span><span>${fmt(tab.charges.gratuity)}</span></div>
+    <div class="charge-row"><span>Gratuity</span><span>${fmt(tab.charges.gratuity)}</span></div>
     <div class="charge-row total"><span>Total</span><span>${fmt(tab.charges.total)}</span></div>
   `;
 
-  // Footer
   if (myGuestId) {
     const me = tab.guests.find(g => g.id === myGuestId);
     if (me) {
@@ -80,7 +78,7 @@ function render(tabData) {
       document.getElementById('footer-owed').textContent = fmt(me.owed);
       const btn = document.getElementById('settle-btn');
       btn.disabled = me.paid;
-      btn.textContent = me.paid ? '✓ Paid' : '✓  I\'ve Settled My Tab';
+      btn.textContent = me.paid ? '✓ Paid' : "✓ I've Settled My Tab";
     }
   }
 
@@ -91,39 +89,10 @@ function showSettled() {
   document.getElementById('settlement-overlay').classList.add('visible');
 }
 
-window.promptName = function() {
-  showToast('Select your name above first');
-};
-
-window.selectGuest = function(guestId) {
+window.selectGuest = function (guestId) {
   myGuestId = guestId;
   if (tab) render(tab);
 };
-
-window.toggle = function(itemId) {
-  if (!myGuestId || !tab) return;
-  const item = tab.items.find(i => i.id === itemId);
-  if (!item) return;
-  const endpoint = item.claimedBy === myGuestId ? '/api/unclaim' : '/api/claim';
-  if (item.claimedBy && item.claimedBy !== myGuestId) return;
-  fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ itemId, guestId: myGuestId })
-  }).then(r => r.json()).then(render);
-};
-
-document.getElementById('settle-btn').addEventListener('click', () => {
-  if (!myGuestId) return;
-  fetch('/api/paid', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ guestId: myGuestId })
-  }).then(r => r.json()).then(data => {
-    render(data.tab);
-    if (data.settled) showSettled();
-  });
-});
 
 let toastTimer = null;
 function showToast(msg) {
@@ -139,14 +108,43 @@ function showToast(msg) {
   toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
 }
 
-// Reset guest selection if page is restored from iOS bfcache
+window.promptName = function () { showToast('Select your name above first'); };
+
+window.toggle = function (itemId) {
+  if (!myGuestId || !tab) return;
+  const item = tab.items.find(i => i.id === itemId);
+  if (!item) return;
+  if (item.claimedBy && item.claimedBy !== myGuestId) return;
+  const endpoint = item.claimedBy === myGuestId
+    ? `/api/tabs/${tabId}/unclaim`
+    : `/api/tabs/${tabId}/claim`;
+  fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId, guestId: myGuestId }),
+  }).then(r => r.json()).then(data => { if (!data.error) render(data); });
+};
+
+document.getElementById('settle-btn').addEventListener('click', () => {
+  if (!myGuestId) return;
+  fetch(`/api/tabs/${tabId}/paid`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ guestId: myGuestId }),
+  }).then(r => r.json()).then(data => {
+    if (data.tab) render(data.tab);
+    if (data.settled) showSettled();
+  });
+});
+
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) { myGuestId = null; if (tab) render(tab); }
 });
 
-// Poll for updates every 2 seconds
 function poll() {
-  fetch('/api/tab').then(r => r.json()).then(render);
+  fetch(`/api/tabs/${tabId}`)
+    .then(r => r.json())
+    .then(data => { if (!data.error) render(data); });
 }
 poll();
 setInterval(poll, 2000);

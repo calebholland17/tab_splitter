@@ -1,3 +1,5 @@
+const tabId = window.location.pathname.split('/').pop();
+
 function fmt(n) { return '$' + Number(n).toFixed(2); }
 
 function esc(s) {
@@ -5,12 +7,13 @@ function esc(s) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function render(tab) {
   document.getElementById('tab-name').textContent = tab.name;
-  document.getElementById('guest-url').textContent = `${window.location.origin}/tab`;
+  document.getElementById('guest-url').textContent = `${window.location.origin}/tab/${tabId}`;
 
   const paidCount = tab.guests.filter(g => g.paid).length;
   document.getElementById('progress-fill').style.width =
@@ -31,22 +34,21 @@ function render(tab) {
   }
 }
 
-window.copyLink = function() {
+window.copyLink = function () {
   const btn = document.querySelector('.btn-outline');
-  navigator.clipboard.writeText(`${window.location.origin}/tab`)
+  navigator.clipboard.writeText(`${window.location.origin}/tab/${tabId}`)
     .then(() => {
       const orig = btn.textContent;
       btn.textContent = 'Copied!';
       setTimeout(() => { btn.textContent = orig; }, 2000);
     })
-    .catch(() => {
-      prompt('Copy this link:', `${window.location.origin}/tab`);
-    });
+    .catch(() => prompt('Copy this link:', `${window.location.origin}/tab/${tabId}`));
 };
 
-// Poll for updates every 2 seconds
 function poll() {
-  fetch('/api/tab').then(r => r.json()).then(render);
+  fetch(`/api/tabs/${tabId}`)
+    .then(r => r.json())
+    .then(data => { if (!data.error) render(data); });
 }
 poll();
 setInterval(poll, 2000);

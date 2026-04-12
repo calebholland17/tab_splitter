@@ -7,55 +7,47 @@
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <h1 id="tab-name">TabSplitter</h1>
-    <div class="meta" id="tab-meta"></div>
+  <div class="app">
+    <div class="header">
+      <h1 id="tab-name">Loading…</h1>
+      <div class="meta" id="tab-meta"></div>
+    </div>
+
+    <div class="payment-banner">
+      <div>
+        <div class="label">SEND PAYMENT TO</div>
+        <div class="payment-handle" id="payment-handle"></div>
+      </div>
+      <div class="pm-badge" id="payment-platform"></div>
+    </div>
+
+    <div class="name-bar">
+      <span class="label">You are:</span>
+      <div class="name-chips" id="name-chips"></div>
+    </div>
+
+    <div class="section-label" id="items-label">ITEMS</div>
+    <div id="item-list"></div>
+
+    <div class="section-label">CHARGES</div>
+    <div class="charges-section" id="charges-section"></div>
   </div>
 
-  <div class="payment-banner">
-    <div>
-      <div class="label">Send payment to</div>
-      <div class="payment-handle" id="payment-handle">—</div>
+  <div class="footer" id="footer" style="display:none">
+    <div class="totals">
+      <div class="total-row"><span>Your items</span><span id="footer-subtotal"></span></div>
+      <div class="total-row"><span>Fees &amp; tip</span><span id="footer-fees"></span></div>
+      <div class="total-row grand"><span>You owe</span><span class="amount" id="footer-owed"></span></div>
     </div>
-    <span class="pm-badge" id="payment-platform">Venmo</span>
+    <button class="btn btn-green" id="settle-btn">✓ I've Settled My Tab</button>
   </div>
 
-  <div class="name-bar">
-    <span class="label">You are:</span>
-    <div class="name-chips" id="name-chips"></div>
+  <div class="settlement-overlay" id="settlement-overlay">
+    <h1>🎉</h1>
+    <h2>All Settled!</h2>
+    <p>Everyone has paid. Enjoy your night.</p>
   </div>
 
-  <div id="item-list"></div>
-
-  <div class="section-label">Charges</div>
-  <div class="charges-section" id="charges-section"></div>
-</div>
-
-<div class="footer" id="footer" style="display:none;">
-  <div class="totals">
-    <div class="total-row">
-      <span>Your items subtotal</span>
-      <span id="footer-subtotal">$0.00</span>
-    </div>
-    <div class="total-row">
-      <span>Your share of tax, tip &amp; fees</span>
-      <span id="footer-fees">+ $0.00</span>
-    </div>
-    <div class="total-row grand">
-      <span>You owe</span>
-      <span class="amount" id="footer-owed">$0.00</span>
-    </div>
-  </div>
-  <button class="btn btn-green" id="settle-btn">✓ &nbsp;I've Settled My Tab</button>
-</div>
-
-<div class="settlement-overlay" id="settlement-overlay">
-  <h1>🎉</h1>
-  <h2>We're Settled!</h2>
-  <p>Everyone has paid. Enjoy your night!</p>
-</div>
-
-<script src="/js/tab.js"></script>
+  <script src="/js/tab.js"></script>
 </body>
 </html>
