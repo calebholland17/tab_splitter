@@ -9,6 +9,7 @@ const {
 
 const app    = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -19,36 +20,38 @@ app.get('/host/:tabId', (req, res) => res.sendFile(path.join(__dirname, 'public/
 app.get('/tab/:tabId',  (req, res) => res.sendFile(path.join(__dirname, 'public/tab.html')));
 
 // Receipt parsing
-app.post('/api/receipt/parse', upload.single('image'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-  try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: req.file.mimetype,
-              data: req.file.buffer.toString('base64'),
+app.post('/api/receipt/parse', async (req, res) => {
+  upload.single('image')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: req.file.mimetype,
+                data: req.file.buffer.toString('base64'),
+              },
             },
-          },
-          {
-            type: 'text',
-            text: 'Extract all line items from this receipt. Return ONLY a JSON array with no markdown: [{"name": string, "price": number, "qty": number}]. Each unique item type is one entry. If a line says "3 @ $6.50" that is qty=3, price=6.50. Do not include subtotals, taxes, tips, or totals.',
-          },
-        ],
-      }],
-    });
-    const items = JSON.parse(response.content[0].text.trim());
-    res.json({ items });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+            {
+              type: 'text',
+              text: 'Extract all line items from this receipt. Return ONLY a JSON array with no markdown: [{"name": string, "price": number, "qty": number}]. Each unique item type is one entry. If a line says "3 @ $6.50" that is qty=3, price=6.50. Do not include subtotals, taxes, tips, or totals.',
+            },
+          ],
+        }],
+      });
+      const items = JSON.parse(response.content[0].text.trim());
+      res.json({ items });
+    } catch (e) {
+      res.status(400).json({ error: e.message });
+    }
+  });
 });
 
 // Create tab
@@ -73,7 +76,8 @@ app.get('/api/tabs/:tabId', (req, res) => {
 app.post('/api/tabs/:tabId/claim', (req, res) => {
   const { itemId, guestId } = req.body || {};
   try {
-    claimItem(req.params.tabId, itemId, guestId);
+    const ok = claimItem(req.params.tabId, itemId, guestId);
+    if (!ok) return res.status(409).json({ error: 'Item already claimed or invalid request' });
     res.json(getTabView(req.params.tabId));
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -84,7 +88,8 @@ app.post('/api/tabs/:tabId/claim', (req, res) => {
 app.post('/api/tabs/:tabId/unclaim', (req, res) => {
   const { itemId, guestId } = req.body || {};
   try {
-    unclaimItem(req.params.tabId, itemId, guestId);
+    const ok = unclaimItem(req.params.tabId, itemId, guestId);
+    if (!ok) return res.status(409).json({ error: 'Item not claimed by this guest' });
     res.json(getTabView(req.params.tabId));
   } catch (err) {
     res.status(400).json({ error: err.message });
