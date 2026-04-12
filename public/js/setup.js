@@ -1,0 +1,110 @@
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+let items = [];
+
+function recalcTotal() {
+  const subtotal = items.reduce((s, item) => s + item.price * item.qty, 0);
+  const surcharge = parseFloat(document.getElementById('charge-surcharge').value) || 0;
+  const tax       = parseFloat(document.getElementById('charge-tax').value) || 0;
+  const gratuity  = parseFloat(document.getElementById('charge-gratuity').value) || 0;
+  document.getElementById('charge-total').value =
+    (Math.round((subtotal + surcharge + tax + gratuity) * 100) / 100).toFixed(2);
+}
+
+function renderItems() {
+  const el = document.getElementById('item-editor');
+  if (items.length === 0) {
+    el.innerHTML = '<div class="item-empty">No items yet — scan a receipt or add manually.</div>';
+    recalcTotal();
+    return;
+  }
+  el.innerHTML = items.map((item, i) => `
+    <div class="setup-item">
+      <input class="setup-item-name" value="${esc(item.name)}"
+        placeholder="Item name" onchange="updateItem(${i},'name',this.value)">
+      <input class="setup-item-qty" type="number" value="${item.qty}" min="1"
+        onchange="updateItem(${i},'qty',+this.value)">
+      <span class="setup-item-x">×</span>
+      <input class="setup-item-price" type="number" value="${item.price.toFixed(2)}"
+        step="0.01" min="0" onchange="updateItem(${i},'price',+this.value)">
+      <button class="btn-remove" onclick="removeItem(${i})">✕</button>
+    </div>
+  `).join('');
+  recalcTotal();
+}
+
+window.updateItem = (i, field, val) => { items[i][field] = val; recalcTotal(); };
+window.removeItem = (i) => { items.splice(i, 1); renderItems(); };
+window.addItem    = () => { items.push({ name: '', price: 0.00, qty: 1 }); renderItems(); };
+
+['charge-surcharge', 'charge-tax', 'charge-gratuity'].forEach(id => {
+  document.getElementById(id).addEventListener('input', recalcTotal);
+});
+
+document.getElementById('receipt-upload').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('parse-status');
+  status.textContent = 'Scanning receipt…';
+  status.className = 'parse-status';
+  const form = new FormData();
+  form.append('image', file);
+  try {
+    const res  = await fetch('/api/receipt/parse', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    items = data.items.map(i => ({ name: i.name, price: Number(i.price), qty: Number(i.qty) }));
+    renderItems();
+    status.textContent = `✓ Found ${items.length} item type${items.length === 1 ? '' : 's'} — edit below if needed`;
+    status.className = 'parse-status success';
+  } catch (err) {
+    status.textContent = `Scan failed: ${err.message}. Add items manually below.`;
+    status.className = 'parse-status error';
+  }
+});
+
+window.createTab = async () => {
+  const name            = document.getElementById('tab-name').value.trim();
+  const paymentHandle   = document.getElementById('payment-handle').value.trim();
+  const paymentPlatform = document.getElementById('payment-platform').value.trim() || 'Venmo';
+  const surcharge = parseFloat(document.getElementById('charge-surcharge').value) || 0;
+  const tax       = parseFloat(document.getElementById('charge-tax').value) || 0;
+  const gratuity  = parseFloat(document.getElementById('charge-gratuity').value) || 0;
+  const guestText = document.getElementById('guest-names').value;
+  const guests    = guestText.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+
+  if (!name)             return alert('Please enter a tab name.');
+  if (items.length === 0) return alert('Please add at least one item.');
+  if (guests.length === 0) return alert('Please add at least one guest name.');
+
+  const subtotal = Math.round(items.reduce((s, i) => s + i.price * i.qty, 0) * 100) / 100;
+  const total    = Math.round((subtotal + surcharge + tax + gratuity) * 100) / 100;
+  const charges  = { subtotal, surcharge, tax, gratuity, total };
+
+  const btn = document.getElementById('create-btn');
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  try {
+    const res  = await fetch('/api/tabs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, paymentHandle, paymentPlatform, charges, guests, items }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    window.location.href = `/host/${data.tabId}`;
+  } catch (err) {
+    alert(`Failed to create tab: ${err.message}`);
+    btn.disabled = false;
+    btn.textContent = 'Create Tab →';
+  }
+};
+
+renderItems();

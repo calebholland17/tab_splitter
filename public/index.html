@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TabSplitter — New Tab</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>TabSplitter</h1>
+      <div class="meta">Create a new tab</div>
+    </div>
+
+    <div class="section-label">RECEIPT</div>
+    <div class="setup-card">
+      <label class="upload-btn" for="receipt-upload">
+        📷 Scan Receipt with AI
+        <input type="file" id="receipt-upload" accept="image/*" capture="environment" style="display:none">
+      </label>
+      <div id="parse-status" class="parse-status"></div>
+    </div>
+
+    <div class="section-label">ITEMS</div>
+    <div id="item-editor"></div>
+    <div style="padding: 8px 20px 16px;">
+      <button class="btn btn-outline" onclick="addItem()">+ Add Item</button>
+    </div>
+
+    <div class="section-label">TAB DETAILS</div>
+    <div class="setup-card">
+      <div class="setup-field">
+        <label class="setup-label">Tab Name</label>
+        <input id="tab-name" class="setup-input" placeholder="e.g. Kirkwood Tab 4/12" type="text">
+      </div>
+      <div class="setup-field">
+        <label class="setup-label">Payment Handle</label>
+        <input id="payment-handle" class="setup-input" placeholder="e.g. @Caleb-Holland-3" type="text">
+      </div>
+      <div class="setup-field">
+        <label class="setup-label">Platform</label>
+        <input id="payment-platform" class="setup-input" placeholder="Venmo" type="text" value="Venmo">
+      </div>
+    </div>
+
+    <div class="section-label">FEES (from receipt)</div>
+    <div class="setup-card">
+      <div class="setup-row">
+        <div class="setup-field">
+          <label class="setup-label">Surcharge ($)</label>
+          <input id="charge-surcharge" class="setup-input" type="number" step="0.01" min="0" value="0">
+        </div>
+        <div class="setup-field">
+          <label class="setup-label">Tax ($)</label>
+          <input id="charge-tax" class="setup-input" type="number" step="0.01" min="0" value="0">
+        </div>
+      </div>
+      <div class="setup-row">
+        <div class="setup-field">
+          <label class="setup-label">Gratuity ($)</label>
+          <input id="charge-gratuity" class="setup-input" type="number" step="0.01" min="0" value="0">
+        </div>
+        <div class="setup-field">
+          <label class="setup-label">Total ($)</label>
+          <input id="charge-total" class="setup-input" type="number" step="0.01" min="0" placeholder="Auto-calculated" readonly>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">GUESTS</div>
+    <div class="setup-card">
+      <div class="setup-field">
+        <label class="setup-label">Names (one per line or comma-separated)</label>
+        <textarea id="guest-names" class="setup-input setup-textarea" rows="4"
+          placeholder="Caleb&#10;Tyler&#10;Jared&#10;Cooper"></textarea>
+      </div>
+    </div>
+
+    <div style="padding: 20px 20px 40px;">
+      <button class="btn btn-green" id="create-btn" onclick="createTab()">Create Tab →</button>
+    </div>
+  </div>
+  <script src="/js/setup.js"></script>
+</body>
+</html>
