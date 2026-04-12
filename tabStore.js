@@ -58,6 +58,8 @@ function isSettled() {
 }
 
 function getTabView() {
+  const { subtotal, total } = tab.charges;
+  const multiplier = subtotal > 0 ? total / subtotal : 0;
   return {
     id: tab.id,
     name: tab.name,
@@ -69,10 +71,11 @@ function getTabView() {
       const guestSubtotal = tab.items
         .filter(i => i.claimedBy === g.id)
         .reduce((s, i) => s + i.price, 0);
+      const rounded = Math.round(guestSubtotal * 100) / 100;
       return {
         ...g,
-        subtotal: Math.round(guestSubtotal * 100) / 100,
-        owed: calculateOwed(g.id),
+        subtotal: rounded,
+        owed: Math.round(guestSubtotal * multiplier * 100) / 100,
       };
     }),
   };
@@ -97,7 +100,7 @@ function unclaimItem(itemId, guestId) {
 
 function markPaid(guestId) {
   const guest = tab.guests.find(g => g.id === guestId);
-  if (!guest) return false;
+  if (!guest || guest.paid) return false;
   guest.paid = true;
   if (isSettled()) tab.status = 'settled';
   return true;
@@ -105,4 +108,11 @@ function markPaid(guestId) {
 
 function getTab() { return tab; }
 
-module.exports = { getTab, getTabView, claimItem, unclaimItem, markPaid, isSettled, calculateOwed };
+function resetTab() {
+  const fresh = buildKirkwoodTab();
+  tab.status = fresh.status;
+  tab.guests.splice(0, tab.guests.length, ...fresh.guests);
+  tab.items.splice(0, tab.items.length, ...fresh.items);
+}
+
+module.exports = { getTab, getTabView, claimItem, unclaimItem, markPaid, isSettled, calculateOwed, resetTab };

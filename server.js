@@ -24,23 +24,25 @@ io.on('connection', (socket) => {
   // Send current state on connect
   socket.emit('tab_updated', getTabView());
 
-  socket.on('claim_item', ({ itemId, guestId }) => {
-    if (claimItem(itemId, guestId)) {
-      io.emit('tab_updated', getTabView());
-    }
+  socket.on('claim_item', ({ itemId, guestId } = {}) => {
+    try {
+      if (claimItem(itemId, guestId)) io.emit('tab_updated', getTabView());
+    } catch (err) { console.error('claim_item error:', err); }
   });
 
-  socket.on('unclaim_item', ({ itemId, guestId }) => {
-    if (unclaimItem(itemId, guestId)) {
-      io.emit('tab_updated', getTabView());
-    }
+  socket.on('unclaim_item', ({ itemId, guestId } = {}) => {
+    try {
+      if (unclaimItem(itemId, guestId)) io.emit('tab_updated', getTabView());
+    } catch (err) { console.error('unclaim_item error:', err); }
   });
 
-  socket.on('mark_paid', ({ guestId }) => {
-    if (markPaid(guestId)) {
-      io.emit('tab_updated', getTabView());
-      if (isSettled()) io.emit('tab_settled');
-    }
+  socket.on('mark_paid', ({ guestId } = {}) => {
+    try {
+      if (markPaid(guestId)) {
+        io.emit('tab_updated', getTabView());
+        if (isSettled()) io.emit('tab_settled');
+      }
+    } catch (err) { console.error('mark_paid error:', err); }
   });
 });
 

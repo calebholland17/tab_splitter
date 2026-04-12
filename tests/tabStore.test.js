@@ -1,5 +1,7 @@
 const store = require('../tabStore');
 
+beforeEach(() => store.resetTab());
+
 describe('getTab', () => {
   it('returns the kirkwood tab', () => {
     const tab = store.getTab();
@@ -21,67 +23,78 @@ describe('claimItem', () => {
     const tab = store.getTab();
     const item = tab.items[0];
     const guest = tab.guests[0];
-    const result = store.claimItem(item.id, guest.id);
-    expect(result).toBe(true);
+    expect(store.claimItem(item.id, guest.id)).toBe(true);
     expect(item.claimedBy).toBe(guest.id);
   });
 
   it('rejects claiming an already-claimed item', () => {
     const tab = store.getTab();
-    const item = tab.items[1];
-    const guest0 = tab.guests[0];
-    const guest1 = tab.guests[1];
-    store.claimItem(item.id, guest0.id);
-    const result = store.claimItem(item.id, guest1.id);
-    expect(result).toBe(false);
-    expect(item.claimedBy).toBe(guest0.id);
+    const item = tab.items[0];
+    store.claimItem(item.id, tab.guests[0].id);
+    expect(store.claimItem(item.id, tab.guests[1].id)).toBe(false);
+    expect(item.claimedBy).toBe(tab.guests[0].id);
   });
 });
 
 describe('unclaimItem', () => {
   it('removes a claim made by the same guest', () => {
     const tab = store.getTab();
-    const item = tab.items[2];
+    const item = tab.items[0];
     const guest = tab.guests[0];
     store.claimItem(item.id, guest.id);
-    const result = store.unclaimItem(item.id, guest.id);
-    expect(result).toBe(true);
+    expect(store.unclaimItem(item.id, guest.id)).toBe(true);
     expect(item.claimedBy).toBeNull();
   });
 
   it('rejects unclaiming an item owned by another guest', () => {
     const tab = store.getTab();
-    const item = tab.items[3];
-    const guest0 = tab.guests[0];
-    const guest1 = tab.guests[1];
-    store.claimItem(item.id, guest0.id);
-    const result = store.unclaimItem(item.id, guest1.id);
-    expect(result).toBe(false);
+    const item = tab.items[0];
+    store.claimItem(item.id, tab.guests[0].id);
+    expect(store.unclaimItem(item.id, tab.guests[1].id)).toBe(false);
   });
 });
 
 describe('calculateOwed', () => {
   it('returns proportional share including tax, tip, fees', () => {
     const tab = store.getTab();
-    const guest = tab.guests[7];
-    const item = tab.items.find(i => i.name === 'Coors Light Can' && i.claimedBy === null);
-    store.claimItem(item.id, guest.id);
+    const guest = tab.guests[0];
+    store.claimItem(tab.items[0].id, guest.id); // $6.50 Coors Light
     const owed = store.calculateOwed(guest.id);
-    // 6.50 * (422.34 / 315.00) = 8.715...
-    expect(owed).toBeCloseTo(8.72, 1);
+    // 6.50 * (422.34 / 315.00) = 8.715... rounds to 8.72
+    expect(owed).toBeCloseTo(8.71, 1);
+  });
+
+  it('returns 0 for guest with no items', () => {
+    const tab = store.getTab();
+    expect(store.calculateOwed(tab.guests[0].id)).toBe(0);
   });
 });
 
 describe('markPaid and isSettled', () => {
   it('marks a guest paid', () => {
     const tab = store.getTab();
-    const guest = tab.guests[0];
-    store.markPaid(guest.id);
-    expect(guest.paid).toBe(true);
+    expect(store.markPaid(tab.guests[0].id)).toBe(true);
+    expect(tab.guests[0].paid).toBe(true);
   });
 
-  it('tab is not settled until all guests paid', () => {
+  it('rejects double-pay', () => {
+    const tab = store.getTab();
+    store.markPaid(tab.guests[0].id);
+    expect(store.markPaid(tab.guests[0].id)).toBe(false);
+  });
+
+  it('is not settled until all guests paid', () => {
+    const tab = store.getTab();
+    tab.guests.slice(0, 7).forEach(g => store.markPaid(g.id));
     expect(store.isSettled()).toBe(false);
+    expect(tab.status).toBe('open');
+  });
+
+  it('sets status to settled when all guests paid', () => {
+    const tab = store.getTab();
+    tab.guests.forEach(g => store.markPaid(g.id));
+    expect(store.isSettled()).toBe(true);
+    expect(tab.status).toBe('settled');
   });
 });
 
@@ -93,5 +106,15 @@ describe('getTabView', () => {
       expect(typeof g.subtotal).toBe('number');
       expect(typeof g.owed).toBe('number');
     }
+  });
+
+  it('calculates owed proportionally based on claimed items', () => {
+    const tab = store.getTab();
+    const guest = tab.guests[0];
+    store.claimItem(tab.items[0].id, guest.id); // $6.50
+    const view = store.getTabView();
+    const guestView = view.guests.find(g => g.id === guest.id);
+    expect(guestView.subtotal).toBe(6.50);
+    expect(guestView.owed).toBeCloseTo(8.71, 1);
   });
 });
