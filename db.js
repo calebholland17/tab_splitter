@@ -117,5 +117,13 @@ function makeStore(db) {
   return { createTab, getTabView, claimItem, unclaimItem, markPaid, isSettled };
 }
 
-const productionDb = buildDb(process.env.DB_PATH || path.join(__dirname, 'tabsplitter.db'));
-module.exports = { buildDb, makeStore, ...makeStore(productionDb) };
+const productionDb =
+  process.env.NODE_ENV !== 'test'
+    ? buildDb(process.env.DB_PATH || path.join(__dirname, 'tabsplitter.db'))
+    : null;
+
+module.exports = {
+  buildDb,
+  makeStore,
+  ...(productionDb ? makeStore(productionDb) : {}),
+};
