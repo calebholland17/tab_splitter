@@ -93,7 +93,7 @@ function showSettled() {
 
 window.selectGuest = function(guestId) {
   myGuestId = guestId;
-  render(tab);
+  if (tab) render(tab);
 };
 
 window.toggle = function(itemId) {
