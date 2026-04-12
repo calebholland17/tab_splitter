@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const { getTabView, claimItem, unclaimItem, markPaid, isSettled } = require('./tabStore');
+const { getTabView, claimItem, unclaimItem, markPaid, isSettled, resetTab } = require('./tabStore');
 
 const app = express();
 
@@ -14,6 +14,12 @@ app.get('/tab', (req, res) => res.sendFile(path.join(__dirname, 'public/tab.html
 
 // REST: get tab state
 app.get('/api/tab', (req, res) => res.json(getTabView()));
+
+// REST: host reset (wipes all claims and payments)
+app.post('/api/reset', (req, res) => {
+  resetTab();
+  res.json(getTabView());
+});
 
 // REST: mutations
 app.post('/api/claim', (req, res) => {

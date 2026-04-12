@@ -2,7 +2,7 @@ const { randomBytes } = require('crypto');
 
 function id() { return randomBytes(4).toString('hex'); }
 
-// --- Hardcoded Kirkwood Tab ---
+// --- Hardcoded Kirkwood Tab (v2 — fresh for live event) ---
 function buildKirkwoodTab() {
   const guests = [
     'Caleb', 'Tyler', 'Jared', 'Cooper', 'Matt', 'Josh', 'Nate', 'Eli'

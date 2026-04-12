@@ -139,6 +139,11 @@ function showToast(msg) {
   toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
 }
 
+// Reset guest selection if page is restored from iOS bfcache
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) { myGuestId = null; if (tab) render(tab); }
+});
+
 // Poll for updates every 2 seconds
 function poll() {
   fetch('/api/tab').then(r => r.json()).then(render);
