@@ -8,8 +8,7 @@
     "test": "jest --forceExit"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "socket.io": "^4.7.5"
+    "express": "^4.19.2"
   },
   "devDependencies": {
     "dotenv": "^16.4.5",

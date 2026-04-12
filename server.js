@@ -1,13 +1,9 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
 const path = require('path');
-const { getTab, getTabView, claimItem, unclaimItem, markPaid, isSettled } = require('./tabStore');
+const { getTabView, claimItem, unclaimItem, markPaid, isSettled } = require('./tabStore');
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -19,36 +15,40 @@ app.get('/tab', (req, res) => res.sendFile(path.join(__dirname, 'public/tab.html
 // REST: get tab state
 app.get('/api/tab', (req, res) => res.json(getTabView()));
 
-// Socket.io
-io.on('connection', (socket) => {
-  // Send current state on connect
-  socket.emit('tab_updated', getTabView());
+// REST: mutations
+app.post('/api/claim', (req, res) => {
+  const { itemId, guestId } = req.body || {};
+  try {
+    claimItem(itemId, guestId);
+    res.json(getTabView());
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
-  socket.on('claim_item', ({ itemId, guestId } = {}) => {
-    try {
-      if (claimItem(itemId, guestId)) io.emit('tab_updated', getTabView());
-    } catch (err) { console.error('claim_item error:', err); }
-  });
+app.post('/api/unclaim', (req, res) => {
+  const { itemId, guestId } = req.body || {};
+  try {
+    unclaimItem(itemId, guestId);
+    res.json(getTabView());
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
-  socket.on('unclaim_item', ({ itemId, guestId } = {}) => {
-    try {
-      if (unclaimItem(itemId, guestId)) io.emit('tab_updated', getTabView());
-    } catch (err) { console.error('unclaim_item error:', err); }
-  });
-
-  socket.on('mark_paid', ({ guestId } = {}) => {
-    try {
-      if (markPaid(guestId)) {
-        io.emit('tab_updated', getTabView());
-        if (isSettled()) io.emit('tab_settled');
-      }
-    } catch (err) { console.error('mark_paid error:', err); }
-  });
+app.post('/api/paid', (req, res) => {
+  const { guestId } = req.body || {};
+  try {
+    markPaid(guestId);
+    res.json({ tab: getTabView(), settled: isSettled() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
-  server.listen(PORT, () => console.log(`TabSplitter running on http://localhost:${PORT}`));
+  app.listen(PORT, () => console.log(`TabSplitter running on http://localhost:${PORT}`));
 }
 
-module.exports = { app, server };
+module.exports = app;

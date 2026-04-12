@@ -1,5 +1,3 @@
-const socket = io();
-
 function fmt(n) { return '$' + Number(n).toFixed(2); }
 
 function esc(s) {
@@ -46,5 +44,9 @@ window.copyLink = function() {
     });
 };
 
-socket.on('tab_updated', render);
-socket.on('tab_settled', () => document.getElementById('settlement-overlay').classList.add('visible'));
+// Poll for updates every 2 seconds
+function poll() {
+  fetch('/api/tab').then(r => r.json()).then(render);
+}
+poll();
+setInterval(poll, 2000);

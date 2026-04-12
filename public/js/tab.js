@@ -1,4 +1,3 @@
-const socket = io();
 let tab = null;
 let myGuestId = null;
 
@@ -100,16 +99,30 @@ window.toggle = function(itemId) {
   if (!myGuestId || !tab) return;
   const item = tab.items.find(i => i.id === itemId);
   if (!item) return;
-  if (item.claimedBy === myGuestId) {
-    socket.emit('unclaim_item', { itemId, guestId: myGuestId });
-  } else if (!item.claimedBy) {
-    socket.emit('claim_item', { itemId, guestId: myGuestId });
-  }
+  const endpoint = item.claimedBy === myGuestId ? '/api/unclaim' : '/api/claim';
+  if (item.claimedBy && item.claimedBy !== myGuestId) return;
+  fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId, guestId: myGuestId })
+  }).then(r => r.json()).then(render);
 };
 
 document.getElementById('settle-btn').addEventListener('click', () => {
-  if (myGuestId) socket.emit('mark_paid', { guestId: myGuestId });
+  if (!myGuestId) return;
+  fetch('/api/paid', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ guestId: myGuestId })
+  }).then(r => r.json()).then(data => {
+    render(data.tab);
+    if (data.settled) showSettled();
+  });
 });
 
-socket.on('tab_updated', render);
-socket.on('tab_settled', showSettled);
+// Poll for updates every 2 seconds
+function poll() {
+  fetch('/api/tab').then(r => r.json()).then(render);
+}
+poll();
+setInterval(poll, 2000);
