@@ -44,10 +44,11 @@ function render(tabData) {
       const claimer = item.claimedBy ? tab.guests.find(g => g.id === item.claimedBy) : null;
       const isMe = item.claimedBy === myGuestId;
       const isTaken = item.claimedBy && !isMe;
-      const cls = isMe ? 'claimed-mine' : isTaken ? 'claimed-other' : '';
+      const cls = isMe ? 'claimed-mine' : isTaken ? 'claimed-other' : (!myGuestId ? 'no-guest' : '');
       const check = (isMe || isTaken) ? '✓' : '';
       const sub = isMe ? 'Claimed by you' : (claimer ? esc(claimer.name) : '');
-      const onclick = (!isTaken && myGuestId) ? `onclick="toggle('${item.id}')"` : '';
+      const onclick = isTaken ? '' : myGuestId ? `onclick="toggle('${item.id}')"` : `onclick="promptName()"`;
+
       return `<div class="item ${cls}" ${onclick} data-id="${item.id}">
         <div class="item-check">${check}</div>
         <div class="item-info">
@@ -90,6 +91,10 @@ function showSettled() {
   document.getElementById('settlement-overlay').classList.add('visible');
 }
 
+window.promptName = function() {
+  showToast('Select your name above first');
+};
+
 window.selectGuest = function(guestId) {
   myGuestId = guestId;
   if (tab) render(tab);
@@ -119,6 +124,20 @@ document.getElementById('settle-btn').addEventListener('click', () => {
     if (data.settled) showSettled();
   });
 });
+
+let toastTimer = null;
+function showToast(msg) {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
+}
 
 // Poll for updates every 2 seconds
 function poll() {
