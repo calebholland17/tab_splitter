@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TabSplitter — Host</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="wide">
+  <div style="padding: 20px 0 16px;">
+    <h1 style="color:var(--accent);font-size:22px;">TabSplitter</h1>
+    <div id="tab-name" style="font-size:16px;font-weight:600;margin-top:4px;"></div>
+  </div>
+
+  <div class="share-box">
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Guest Link — share this</div>
+      <div class="share-url" id="guest-url"></div>
+      <button class="btn btn-outline" onclick="copyLink()">Copy Link</button>
+    </div>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+
+  <div class="section-label">Guest Status</div>
+  <div class="guest-status-list" id="guest-list"></div>
+</div>
+
+<div class="settlement-overlay" id="settlement-overlay">
+  <h1>🎉</h1>
+  <h2>We're Settled!</h2>
+  <p>Everyone has paid. Enjoy your night!</p>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/host.js"></script>
+</body>
+</html>
