@@ -4,6 +4,14 @@ let myGuestId = null;
 
 function fmt(n) { return '$' + Number(n).toFixed(2); }
 
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function groupItems(items) {
   const groups = new Map();
   for (const item of items) {
@@ -25,8 +33,8 @@ function render(tabData) {
   // Name chips
   document.getElementById('name-chips').innerHTML = tab.guests.map(g => `
     <div class="chip ${g.id === myGuestId ? 'active' : ''} ${g.paid ? 'paid' : ''}"
-      onclick="selectGuest('${g.id}')">
-      ${g.name}${g.paid ? ' ✓' : ''}
+      onclick="selectGuest('${esc(g.id)}')">
+      ${esc(g.name)}${g.paid ? ' ✓' : ''}
     </div>
   `).join('');
 
@@ -39,18 +47,18 @@ function render(tabData) {
       const isTaken = item.claimedBy && !isMe;
       const cls = isMe ? 'claimed-mine' : isTaken ? 'claimed-other' : '';
       const check = (isMe || isTaken) ? '✓' : '';
-      const sub = isMe ? 'Claimed by you' : (claimer ? claimer.name : '');
+      const sub = isMe ? 'Claimed by you' : (claimer ? esc(claimer.name) : '');
       const onclick = (!isTaken && myGuestId) ? `onclick="toggle('${item.id}')"` : '';
       return `<div class="item ${cls}" ${onclick} data-id="${item.id}">
         <div class="item-check">${check}</div>
         <div class="item-info">
-          <div class="item-name">${item.name}</div>
+          <div class="item-name">${esc(item.name)}</div>
           ${sub ? `<div class="item-claimer">${sub}</div>` : ''}
         </div>
         <div class="item-price">${fmt(item.price)}</div>
       </div>`;
     }).join('');
-    return `<div class="group-header">${group.name} — ${fmt(group.price)} ea</div>${rows}`;
+    return `<div class="group-header">${esc(group.name)} — ${fmt(group.price)} ea</div>${rows}`;
   }).join('');
 
   // Charges
