@@ -221,3 +221,5 @@ body {
   font-size: 14px; padding: 4px 6px; border-radius: 4px; transition: color .1s;
 }
 .btn-remove:hover { color: #f87171; }
+.add-item-bar { padding: 8px 20px 16px; }
+.create-btn-bar { padding: 20px 20px 40px; }

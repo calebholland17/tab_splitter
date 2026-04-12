@@ -3,7 +3,8 @@ function esc(s) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 let items = [];
@@ -27,12 +28,12 @@ function renderItems() {
   el.innerHTML = items.map((item, i) => `
     <div class="setup-item">
       <input class="setup-item-name" value="${esc(item.name)}"
-        placeholder="Item name" onchange="updateItem(${i},'name',this.value)">
+        placeholder="Item name" oninput="updateItem(${i},'name',this.value)">
       <input class="setup-item-qty" type="number" value="${item.qty}" min="1"
-        onchange="updateItem(${i},'qty',+this.value)">
+        oninput="updateItem(${i},'qty',+this.value)">
       <span class="setup-item-x">×</span>
       <input class="setup-item-price" type="number" value="${item.price.toFixed(2)}"
-        step="0.01" min="0" onchange="updateItem(${i},'price',+this.value)">
+        step="0.01" min="0" oninput="updateItem(${i},'price',+this.value)">
       <button class="btn-remove" onclick="removeItem(${i})">✕</button>
     </div>
   `).join('');
@@ -57,8 +58,8 @@ document.getElementById('receipt-upload').addEventListener('change', async (e) =
   form.append('image', file);
   try {
     const res  = await fetch('/api/receipt/parse', { method: 'POST', body: form });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    const data = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
+    if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
     items = data.items.map(i => ({ name: i.name, price: Number(i.price), qty: Number(i.qty) }));
     renderItems();
     status.textContent = `✓ Found ${items.length} item type${items.length === 1 ? '' : 's'} — edit below if needed`;
@@ -80,6 +81,7 @@ window.createTab = async () => {
   const guests    = guestText.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
 
   if (!name)             return alert('Please enter a tab name.');
+  if (!paymentHandle)   return alert('Please enter a payment handle (e.g. @Caleb-Holland-3).');
   if (items.length === 0) return alert('Please add at least one item.');
   if (guests.length === 0) return alert('Please add at least one guest name.');
 
@@ -97,8 +99,8 @@ window.createTab = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, paymentHandle, paymentPlatform, charges, guests, items }),
     });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    const data = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
+    if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
     window.location.href = `/host/${data.tabId}`;
   } catch (err) {
     alert(`Failed to create tab: ${err.message}`);
