@@ -1,4 +1,4 @@
-name: Deploy to Azure Web App
+name: Deploy to Railway
 
 on:
   push:
@@ -10,17 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
 
-      - name: Install dependencies
-        run: npm ci --omit=dev
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+      - name: Deploy
+        run: railway up --service tab-splitter
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
