@@ -1,4 +1,4 @@
-const tabId = window.location.pathname.split('/').pop();
+const tabId = window.location.pathname.split('/').filter(Boolean).pop();
 let tab = null;
 let myGuestId = null;
 
@@ -27,7 +27,7 @@ function render(tabData) {
   document.getElementById('tab-name').textContent = tab.name;
   document.getElementById('tab-meta').textContent =
     `${tab.guests.length} guests · ${fmt(tab.charges.total)} total`;
-  document.getElementById('payment-handle').textContent  = tab.payment.handle;
+  document.getElementById('payment-handle').textContent = tab.payment.handle;
   document.getElementById('payment-platform').textContent = tab.payment.platform;
 
   document.getElementById('name-chips').innerHTML = tab.guests.map(g => `
@@ -122,7 +122,10 @@ window.toggle = function (itemId) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ itemId, guestId: myGuestId }),
-  }).then(r => r.json()).then(data => { if (!data.error) render(data); });
+  })
+    .then(r => r.json())
+    .then(data => { if (!data.error) render(data); })
+    .catch(() => showToast('Something went wrong, please try again'));
 };
 
 document.getElementById('settle-btn').addEventListener('click', () => {
@@ -131,20 +134,36 @@ document.getElementById('settle-btn').addEventListener('click', () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ guestId: myGuestId }),
-  }).then(r => r.json()).then(data => {
-    if (data.tab) render(data.tab);
-    if (data.settled) showSettled();
-  });
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.tab) render(data.tab);
+      if (data.settled) showSettled();
+    })
+    .catch(() => showToast('Something went wrong, please try again'));
 });
 
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) { myGuestId = null; if (tab) render(tab); }
 });
 
+let pollInterval = null;
+
 function poll() {
   fetch(`/api/tabs/${tabId}`)
     .then(r => r.json())
-    .then(data => { if (!data.error) render(data); });
+    .then(data => {
+      if (data.error) {
+        clearInterval(pollInterval);
+        document.getElementById('tab-name').textContent = 'Tab not found';
+      } else {
+        render(data);
+      }
+    })
+    .catch(() => {
+      clearInterval(pollInterval);
+      document.getElementById('tab-name').textContent = 'Connection error — reload to retry';
+    });
 }
 poll();
-setInterval(poll, 2000);
+pollInterval = setInterval(poll, 2000);

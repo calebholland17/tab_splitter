@@ -1,4 +1,4 @@
-const tabId = window.location.pathname.split('/').pop();
+const tabId = window.location.pathname.split('/').filter(Boolean).pop();
 
 function fmt(n) { return '$' + Number(n).toFixed(2); }
 
@@ -35,7 +35,7 @@ function render(tab) {
 }
 
 window.copyLink = function () {
-  const btn = document.querySelector('.btn-outline');
+  const btn = document.getElementById('copy-btn');
   navigator.clipboard.writeText(`${window.location.origin}/tab/${tabId}`)
     .then(() => {
       const orig = btn.textContent;
@@ -45,10 +45,23 @@ window.copyLink = function () {
     .catch(() => prompt('Copy this link:', `${window.location.origin}/tab/${tabId}`));
 };
 
+let pollInterval = null;
+
 function poll() {
   fetch(`/api/tabs/${tabId}`)
     .then(r => r.json())
-    .then(data => { if (!data.error) render(data); });
+    .then(data => {
+      if (data.error) {
+        clearInterval(pollInterval);
+        document.getElementById('tab-name').textContent = 'Tab not found';
+      } else {
+        render(data);
+      }
+    })
+    .catch(() => {
+      clearInterval(pollInterval);
+      document.getElementById('tab-name').textContent = 'Connection error — reload to retry';
+    });
 }
 poll();
-setInterval(poll, 2000);
+pollInterval = setInterval(poll, 2000);
