@@ -78,10 +78,8 @@ test('host page updates when guest pays', async ({ page, context }) => {
   await guestPage.locator('.chip', { hasText: 'Alice' }).click();
   await guestPage.locator('#settle-btn').click();
 
-  // Host page should show Alice as paid within 3 seconds
-  await hostPage.waitForTimeout(3000);
-  await hostPage.reload();
-  await expect(hostPage.locator('.guest-status-row')).toHaveClass(/paid/);
+  // Host page's live polling (every 2s) should update the DOM — wait for it directly
+  await expect(hostPage.locator('.guest-status-row', { hasText: 'Alice' })).toHaveClass(/paid/, { timeout: 8000 });
 });
 
 test('no items appear selected before name is chosen', async ({ page }) => {
