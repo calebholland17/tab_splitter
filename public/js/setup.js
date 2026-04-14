@@ -68,9 +68,30 @@ async function handleReceiptFile(file) {
     const data = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
     if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
     items = data.items.map(i => ({ name: i.name, price: Number(i.price), qty: Number(i.qty) }));
-    renderItems();
-    status.textContent = `✓ Found ${items.length} item type${items.length === 1 ? '' : 's'} — edit below if needed`;
-    status.className = 'parse-status success';
+
+    if (data.charges) {
+      document.getElementById('charge-surcharge').value = Number(data.charges.surcharge || 0).toFixed(2);
+      document.getElementById('charge-tax').value       = Number(data.charges.tax       || 0).toFixed(2);
+      document.getElementById('charge-gratuity').value  = Number(data.charges.gratuity  || 0).toFixed(2);
+    }
+
+    renderItems(); // also calls recalcTotal()
+
+    let msg = `✓ Found ${items.length} item type${items.length === 1 ? '' : 's'}`;
+    if (data.receiptTotal) {
+      const ourTotal = parseFloat(document.getElementById('charge-total').value);
+      const diff = Math.abs(ourTotal - data.receiptTotal);
+      if (diff < 0.02) {
+        msg += ` · Total matches receipt ($${ourTotal.toFixed(2)}) ✓`;
+        status.className = 'parse-status success';
+      } else {
+        msg += ` · Total mismatch: we got $${ourTotal.toFixed(2)}, receipt shows $${data.receiptTotal.toFixed(2)} — check items/charges`;
+        status.className = 'parse-status warning';
+      }
+    } else {
+      status.className = 'parse-status success';
+    }
+    status.textContent = msg;
   } catch (err) {
     status.textContent = `Scan failed: ${err.message}. Add items manually below.`;
     status.className = 'parse-status error';

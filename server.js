@@ -41,14 +41,17 @@ app.post('/api/receipt/parse', async (req, res) => {
             },
             {
               type: 'text',
-              text: 'Extract all line items from this receipt. Return ONLY a JSON array with no markdown: [{"name": string, "price": number, "qty": number}]. Rules: (1) price is always the per-item unit price, never the line total. (2) If both a unit price and line total appear (e.g. "12 @ $6.50 $78.00"), use the unit price. (3) If only a quantity and line total appear with no unit price (e.g. "6 Sam Adams $30"), divide to get the unit price (30/6 = 5.00). (4) If no quantity is shown, use qty=1. (5) Do not include subtotals, taxes, tips, gratuity, or totals.',
+              text: 'Extract all data from this receipt. Return ONLY a JSON object with no markdown: {"items": [{"name": string, "price": number, "qty": number}], "charges": {"surcharge": number, "tax": number, "gratuity": number}, "total": number}. Rules for items: (1) price is always the per-item unit price, never the line total. (2) If both a unit price and line total appear (e.g. "12 @ $6.50 $78.00"), use the unit price. (3) If only a quantity and line total appear with no unit price (e.g. "6 Sam Adams $30"), divide to get the unit price (30/6 = 5.00). (4) If no quantity is shown, use qty=1. (5) Do not include subtotals, taxes, tips, gratuity, or totals in the items array. Rules for charges: surcharge is any mandatory service charge or fee (not tax or tip); tax is sales tax; gratuity is any tip or auto-gratuity. Use 0 for any charge not present. Rules for total: use the grand total shown on the receipt.',
             },
           ],
         }],
       });
       const raw = response.content[0].text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-      const items = JSON.parse(raw);
-      res.json({ items });
+      const parsed = JSON.parse(raw);
+      const items = parsed.items || parsed; // fallback if model returns bare array
+      const charges = parsed.charges || { surcharge: 0, tax: 0, gratuity: 0 };
+      const receiptTotal = parsed.total || null;
+      res.json({ items, charges, receiptTotal });
     } catch (e) {
       res.status(400).json({ error: e.message });
     }
