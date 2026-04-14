@@ -223,3 +223,5 @@ body {
 .btn-remove:hover { color: #f87171; }
 .add-item-bar { padding: 8px 20px 16px; }
 .create-btn-bar { padding: 20px 20px 40px; }
+.upload-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.upload-btns .upload-btn { flex: 1; justify-content: center; }

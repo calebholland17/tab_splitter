@@ -48,8 +48,7 @@ window.addItem    = () => { items.push({ name: '', price: 0.00, qty: 1 }); rende
   document.getElementById(id).addEventListener('input', recalcTotal);
 });
 
-document.getElementById('receipt-upload').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
+async function handleReceiptFile(file) {
   if (!file) return;
   const status = document.getElementById('parse-status');
   status.textContent = 'Scanning receipt…';
@@ -68,6 +67,10 @@ document.getElementById('receipt-upload').addEventListener('change', async (e) =
     status.textContent = `Scan failed: ${err.message}. Add items manually below.`;
     status.className = 'parse-status error';
   }
+}
+
+['receipt-camera', 'receipt-library'].forEach(id => {
+  document.getElementById(id).addEventListener('change', e => handleReceiptFile(e.target.files[0]));
 });
 
 window.createTab = async () => {

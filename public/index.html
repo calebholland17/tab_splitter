@@ -15,10 +15,16 @@
 
     <div class="section-label">RECEIPT</div>
     <div class="setup-card">
-      <label class="upload-btn" for="receipt-upload">
-        📷 Scan Receipt with AI
-        <input type="file" id="receipt-upload" accept="image/*" capture="environment" style="display:none">
-      </label>
+      <div class="upload-btns">
+        <label class="upload-btn" for="receipt-camera">
+          📷 Scan with Camera
+          <input type="file" id="receipt-camera" accept="image/*" capture="environment" style="display:none">
+        </label>
+        <label class="upload-btn" for="receipt-library">
+          🖼 Upload from Library
+          <input type="file" id="receipt-library" accept="image/*" style="display:none">
+        </label>
+      </div>
       <div id="parse-status" class="parse-status"></div>
     </div>
 
