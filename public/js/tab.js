@@ -123,7 +123,7 @@ function render(tabData) {
   document.getElementById('payment-handle').textContent = tab.payment.handle;
   const venmoHandle = tab.payment.handle.replace(/^@/, '');
   document.getElementById('payment-platform').innerHTML =
-    `<a href="venmo://users?username=${encodeURIComponent(venmoHandle)}" class="pm-badge-link">${esc(tab.payment.platform)}</a>`;
+    `<a href="venmo://paycharge?txn=pay&recipients=${encodeURIComponent(venmoHandle)}" class="pm-badge-link">${esc(tab.payment.platform)}</a>`;
 
   // Clear pendingGuestId if the guest was removed from the tab
   if (pendingGuestId && !tab.guests.find(g => g.id === pendingGuestId)) {
