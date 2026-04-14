@@ -33,12 +33,13 @@ function renderIdentityPicker() {
   document.getElementById('items-section').style.display = 'none';
   document.getElementById('footer').style.display = 'none';
 
-  document.getElementById('identity-chips').innerHTML = tab.guests.map(g => `
-    <div class="chip ${g.id === pendingGuestId ? 'active' : ''} ${g.paid ? 'paid' : ''}"
-      onclick="pickGuest('${esc(g.id)}')">
-      ${esc(g.name)}${g.paid ? ' ✓' : ''}
-    </div>
-  `).join('');
+  document.getElementById('identity-chips').innerHTML = tab.guests.map(g => {
+    if (g.paid) {
+      return `<div class="chip paid locked">${esc(g.name)} ✓</div>`;
+    }
+    return `<div class="chip ${g.id === pendingGuestId ? 'active' : ''}"
+      onclick="pickGuest('${esc(g.id)}')">${esc(g.name)}</div>`;
+  }).join('');
 
   document.getElementById('confirm-identity-btn').disabled = !pendingGuestId;
 }
@@ -48,12 +49,12 @@ function renderMain() {
   document.getElementById('name-bar').style.display = 'flex';
   document.getElementById('items-section').style.display = 'block';
 
-  // Name bar: current user chip active, all others locked
+  // Name bar: current user chip active, all others locked; "Change" resets to picker
   document.getElementById('name-chips').innerHTML = tab.guests.map(g => {
     const isMe = g.id === myGuestId;
     const cls  = isMe ? `active${g.paid ? ' paid' : ''}` : 'locked';
     return `<div class="chip ${cls}">${esc(g.name)}${g.paid ? ' ✓' : ''}</div>`;
-  }).join('');
+  }).join('') + `<button class="btn-change-identity" onclick="changeIdentity()">Change</button>`;
 
   // Items
   const groups = groupItems(tab.items);
@@ -120,7 +121,9 @@ function render(tabData) {
   document.getElementById('tab-meta').textContent =
     `${tab.guests.length} guests · ${fmt(tab.charges.total)} total`;
   document.getElementById('payment-handle').textContent = tab.payment.handle;
-  document.getElementById('payment-platform').textContent = tab.payment.platform;
+  const venmoHandle = tab.payment.handle.replace(/^@/, '');
+  document.getElementById('payment-platform').innerHTML =
+    `<a href="venmo://users?username=${encodeURIComponent(venmoHandle)}" class="pm-badge-link">${esc(tab.payment.platform)}</a>`;
 
   // Clear pendingGuestId if the guest was removed from the tab
   if (pendingGuestId && !tab.guests.find(g => g.id === pendingGuestId)) {
@@ -144,6 +147,14 @@ window.pickGuest = function (guestId) {
   if (identityLocked) return;
   pendingGuestId = guestId;
   if (tab) renderIdentityPicker();
+};
+
+window.changeIdentity = function () {
+  myGuestId = null;
+  identityLocked = false;
+  pendingGuestId = null;
+  sessionStorage.removeItem(SESSION_KEY);
+  if (tab) render(tab);
 };
 
 window.confirmIdentity = function () {
