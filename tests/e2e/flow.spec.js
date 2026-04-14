@@ -8,7 +8,6 @@ async function createTab(page, { guests = ['Alice', 'Bob'], items = [{ name: 'Be
   await page.fill('#charge-gratuity', '2.00');
   await page.fill('#guest-names', guests.join('\n'));
 
-  // Add items manually
   for (const item of items) {
     await page.click('button:has-text("+ Add Item")');
     const rows = page.locator('.setup-item');
@@ -24,6 +23,12 @@ async function createTab(page, { guests = ['Alice', 'Bob'], items = [{ name: 'Be
   return tabId;
 }
 
+async function selectGuest(page, name) {
+  await page.locator('#identity-chips .chip', { hasText: name }).click();
+  await page.locator('#confirm-identity-btn').click();
+  await expect(page.locator('#items-section')).toBeVisible();
+}
+
 test('setup page creates tab and redirects to host page', async ({ page }) => {
   const tabId = await createTab(page);
   expect(tabId).toHaveLength(6);
@@ -31,18 +36,30 @@ test('setup page creates tab and redirects to host page', async ({ page }) => {
   await expect(page.locator('#guest-url')).toContainText(`/tab/${tabId}`);
 });
 
-test('guest page shows items and allows claiming', async ({ page }) => {
+test('guest page shows identity picker then items after confirmation', async ({ page }) => {
   const tabId = await createTab(page);
   await page.goto(`/tab/${tabId}`);
 
-  // Items should be visible but dimmed (no name selected)
+  // Identity picker should be visible, items hidden
+  await expect(page.locator('#identity-picker')).toBeVisible();
+  await expect(page.locator('#items-section')).toBeHidden();
+
+  // Confirm button disabled until a name is picked
+  await expect(page.locator('#confirm-identity-btn')).toBeDisabled();
+
+  // Select Alice and confirm
+  await selectGuest(page, 'Alice');
+
+  // Items now visible, identity picker hidden
+  await expect(page.locator('#identity-picker')).toBeHidden();
   await expect(page.locator('.item').first()).toBeVisible();
-  await expect(page.locator('.chip').first()).toBeVisible();
+});
 
-  // Select Alice
-  await page.locator('.chip', { hasText: 'Alice' }).click();
+test('guest can claim item and item shows as claimed-mine', async ({ page }) => {
+  const tabId = await createTab(page);
+  await page.goto(`/tab/${tabId}`);
+  await selectGuest(page, 'Alice');
 
-  // Claim first item
   const firstItem = page.locator('.item').first();
   await firstItem.click();
   await expect(firstItem).toHaveClass(/claimed-mine/);
@@ -51,20 +68,19 @@ test('guest page shows items and allows claiming', async ({ page }) => {
 test('claimed items persist after page refresh', async ({ page }) => {
   const tabId = await createTab(page);
   await page.goto(`/tab/${tabId}`);
+  await selectGuest(page, 'Alice');
 
-  await page.locator('.chip', { hasText: 'Alice' }).click();
   const firstItem = page.locator('.item').first();
   await firstItem.click();
   await expect(firstItem).toHaveClass(/claimed-mine/);
 
-  // Reload the page
+  // Reload — identity resets, item still claimed
   await page.reload();
+  await expect(page.locator('#identity-picker')).toBeVisible();
+  await expect(page.locator('.item').first()).toBeHidden(); // items hidden until name picked
 
-  // Item should still be claimed (shown as claimed-other since no name re-selected)
-  await expect(page.locator('.item').first()).toHaveClass(/claimed-other/);
-
-  // Re-select Alice and confirm it's hers
-  await page.locator('.chip', { hasText: 'Alice' }).click();
+  // Re-select Alice — item shows as claimed-mine again
+  await selectGuest(page, 'Alice');
   await expect(page.locator('.item').first()).toHaveClass(/claimed-mine/);
 });
 
@@ -72,24 +88,19 @@ test('host page updates when guest pays', async ({ page, context }) => {
   const tabId = await createTab(page, { guests: ['Alice'] });
   const hostPage = page;
 
-  // Open guest page in new tab
   const guestPage = await context.newPage();
   await guestPage.goto(`/tab/${tabId}`);
-  await guestPage.locator('.chip', { hasText: 'Alice' }).click();
+  await selectGuest(guestPage, 'Alice');
   await guestPage.locator('#settle-btn').click();
 
-  // Host page's live polling (every 2s) should update the DOM — wait for it directly
   await expect(hostPage.locator('.guest-status-row', { hasText: 'Alice' })).toHaveClass(/paid/, { timeout: 8000 });
 });
 
-test('no items appear selected before name is chosen', async ({ page }) => {
+test('items section hidden before identity is confirmed', async ({ page }) => {
   const tabId = await createTab(page);
   await page.goto(`/tab/${tabId}`);
 
-  // All items should have no-guest class (dimmed)
-  const items = page.locator('.item');
-  const count = await items.count();
-  for (let i = 0; i < count; i++) {
-    await expect(items.nth(i)).toHaveClass(/no-guest/);
-  }
+  await expect(page.locator('#identity-picker')).toBeVisible();
+  await expect(page.locator('#items-section')).toBeHidden();
+  await expect(page.locator('#footer')).toBeHidden();
 });
