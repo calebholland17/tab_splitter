@@ -41,7 +41,7 @@ app.post('/api/receipt/parse', async (req, res) => {
             },
             {
               type: 'text',
-              text: 'Extract all line items from this receipt. Return ONLY a JSON array with no markdown: [{"name": string, "price": number, "qty": number}]. Rules: (1) price is always the per-item unit price, never the line total. (2) When a line shows a quantity and unit price like "12 @ $6.50" or "(12 @ 6.50) $78.00", use qty=12 and price=6.50 — ignore the line total. (3) When no quantity is shown, use qty=1 and the listed price. (4) Do not include subtotals, taxes, tips, gratuity, or totals.',
+              text: 'Extract all line items from this receipt. Return ONLY a JSON array with no markdown: [{"name": string, "price": number, "qty": number}]. Rules: (1) price is always the per-item unit price, never the line total. (2) If both a unit price and line total appear (e.g. "12 @ $6.50 $78.00"), use the unit price. (3) If only a quantity and line total appear with no unit price (e.g. "6 Sam Adams $30"), divide to get the unit price (30/6 = 5.00). (4) If no quantity is shown, use qty=1. (5) Do not include subtotals, taxes, tips, gratuity, or totals.',
             },
           ],
         }],
