@@ -23,7 +23,7 @@ body {
   font-size: 14px;
 }
 
-.app { max-width: 480px; margin: 0 auto; padding-bottom: 160px; }
+.app { max-width: 480px; margin: 0 auto; padding-bottom: 260px; }
 .wide { max-width: 560px; margin: 0 auto; padding: 24px 20px; }
 
 /* Header */

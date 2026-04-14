@@ -1,8 +1,11 @@
 const tabId = window.location.pathname.split('/').filter(Boolean).pop();
 let tab = null;
-let myGuestId = null;
-let identityLocked = false;
 let pendingGuestId = null;
+
+// Restore identity from sessionStorage so a page refresh doesn't reset the picker
+const SESSION_KEY = `tab_identity_${tabId}`;
+let myGuestId = sessionStorage.getItem(SESSION_KEY) || null;
+let identityLocked = !!myGuestId;
 
 function fmt(n) { return '$' + Number(n).toFixed(2); }
 
@@ -147,6 +150,7 @@ window.confirmIdentity = function () {
   if (!pendingGuestId) return;
   myGuestId = pendingGuestId;
   identityLocked = true;
+  sessionStorage.setItem(SESSION_KEY, myGuestId);
   if (tab) renderMain();
 };
 
@@ -199,9 +203,11 @@ document.getElementById('settle-btn').addEventListener('click', () => {
 
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) {
+    // Back-navigation (bfcache restore): reset identity so a new person can use the device
     myGuestId = null;
     identityLocked = false;
     pendingGuestId = null;
+    sessionStorage.removeItem(SESSION_KEY);
     if (tab) render(tab);
   }
 });
