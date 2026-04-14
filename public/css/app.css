@@ -26,6 +26,12 @@ body {
 .app { max-width: 480px; margin: 0 auto; padding-bottom: 260px; }
 .wide { max-width: 560px; margin: 0 auto; padding: 24px 20px; }
 
+@media (min-width: 600px) {
+  .app { max-width: 560px; }
+  .header { width: 560px; }
+  .footer { max-width: 560px; }
+}
+
 /* Header */
 .header {
   background: var(--surface);

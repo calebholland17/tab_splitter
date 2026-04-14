@@ -32,8 +32,9 @@ function renderItems() {
       <input class="setup-item-qty" type="number" value="${item.qty}" min="1"
         oninput="updateItem(${i},'qty',+this.value)">
       <span class="setup-item-x">×</span>
-      <input class="setup-item-price" type="number" value="${item.price.toFixed(2)}"
-        step="0.01" min="0" oninput="updateItem(${i},'price',+this.value)">
+      <input class="setup-item-price" type="number" value="${item.price > 0 ? item.price.toFixed(2) : ''}"
+        step="0.01" min="0" inputmode="decimal" placeholder="0.00"
+        oninput="updateItem(${i},'price',+this.value)" onfocus="this.select()">
       <button class="btn-remove" onclick="removeItem(${i})">✕</button>
     </div>
   `).join('');
@@ -42,7 +43,7 @@ function renderItems() {
 
 window.updateItem = (i, field, val) => { items[i][field] = val; recalcTotal(); };
 window.removeItem = (i) => { items.splice(i, 1); renderItems(); };
-window.addItem    = () => { items.push({ name: '', price: 0.00, qty: 1 }); renderItems(); };
+window.addItem    = () => { items.push({ name: '', price: 0, qty: 1 }); renderItems(); };
 
 ['charge-surcharge', 'charge-tax', 'charge-gratuity'].forEach(id => {
   document.getElementById(id).addEventListener('input', recalcTotal);
@@ -110,7 +111,7 @@ async function handleReceiptFile(file) {
 window.createTab = async () => {
   const name            = document.getElementById('tab-name').value.trim();
   const paymentHandle   = document.getElementById('payment-handle').value.trim();
-  const paymentPlatform = document.getElementById('payment-platform').value.trim() || 'Venmo';
+  const paymentPlatform = 'Venmo';
   const surcharge = parseFloat(document.getElementById('charge-surcharge').value) || 0;
   const tax       = parseFloat(document.getElementById('charge-tax').value) || 0;
   const gratuity  = parseFloat(document.getElementById('charge-gratuity').value) || 0;
