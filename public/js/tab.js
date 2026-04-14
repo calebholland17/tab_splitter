@@ -62,8 +62,8 @@ function renderMain() {
       const cls     = isMe ? 'claimed-mine' : isTaken ? 'claimed-other' : '';
       const check   = (isMe || isTaken) ? '✓' : '';
       const sub     = isMe ? 'Claimed by you' : (claimer ? esc(claimer.name) : '');
-      const onclick = isTaken ? '' : `onclick="toggle('${item.id}')"`;
-      return `<div class="item ${cls}" ${onclick} data-id="${item.id}">
+      const onclick = isTaken ? '' : `onclick="toggle('${esc(item.id)}')"`;
+      return `<div class="item ${cls}" ${onclick} data-id="${esc(item.id)}">
         <div class="item-check">${check}</div>
         <div class="item-info">
           <div class="item-name">${esc(item.name)}</div>
@@ -95,7 +95,7 @@ function renderMain() {
     const venmoHandle = tab.payment.handle.replace(/^@/, '');
     const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(venmoHandle)}&amount=${me.owed.toFixed(2)}&note=${encodeURIComponent(tab.name)}`;
     const venmoBtn = document.getElementById('venmo-btn');
-    venmoBtn.href = me.paid ? '#' : venmoUrl;
+    venmoBtn.href = me.paid ? 'javascript:void(0)' : venmoUrl;
     venmoBtn.textContent = me.paid ? '✓ Paid on Venmo' : `Pay ${fmt(me.owed)} on Venmo →`;
     venmoBtn.classList.toggle('btn-disabled', me.paid);
 
@@ -113,6 +113,11 @@ function render(tabData) {
   document.getElementById('payment-handle').textContent = tab.payment.handle;
   document.getElementById('payment-platform').textContent = tab.payment.platform;
 
+  // Clear pendingGuestId if the guest was removed from the tab
+  if (pendingGuestId && !tab.guests.find(g => g.id === pendingGuestId)) {
+    pendingGuestId = null;
+  }
+
   if (identityLocked) {
     renderMain();
   } else {
@@ -127,6 +132,7 @@ function showSettled() {
 }
 
 window.pickGuest = function (guestId) {
+  if (identityLocked) return;
   pendingGuestId = guestId;
   if (tab) renderIdentityPicker();
 };

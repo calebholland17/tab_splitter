@@ -248,3 +248,4 @@ body {
   color: var(--blue); text-decoration: none; text-align: center; display: block;
 }
 .btn-venmo.btn-disabled { opacity: 0.4; pointer-events: none; }
+.identity-confirm-bar { padding-top: 4px; }
