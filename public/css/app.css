@@ -1,18 +1,18 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0f0f13;
-  --surface: #1a1a27;
-  --surface2: #0d0d11;
-  --border: #2a2a3d;
-  --text: #e4e4ef;
-  --muted: #666;
-  --accent: #c9b8ff;
-  --green: #4ade80;
-  --green-bg: #111d11;
-  --blue: #7b9fff;
-  --blue-bg: #3d5afe22;
-  --blue-border: #3d5afe88;
+  --bg: #f6f6f5;
+  --surface: #ffffff;
+  --surface2: #eeeeed;
+  --border: #e0dfdd;
+  --text: #18181a;
+  --muted: #888785;
+  --accent: #2d2d2d;
+  --green: #4a7c59;
+  --green-bg: #f2f7f3;
+  --blue: #2d2d2d;
+  --blue-bg: #2d2d2d0e;
+  --blue-border: #2d2d2d45;
 }
 
 body {
@@ -38,7 +38,7 @@ body {
 
 /* Payment banner */
 .payment-banner {
-  background: linear-gradient(135deg, #1a1f3a 0%, #1e2a1e 100%);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 14px 20px;
   display: flex; align-items: center; justify-content: space-between;
@@ -65,23 +65,25 @@ body {
 }
 .chip {
   padding: 8px 14px; border-radius: 9999px; font-size: 12px; font-weight: 600;
-  cursor: pointer; border: 1.5px solid #333; color: #aaa; background: transparent;
+  cursor: pointer; border: 1.5px solid var(--border); color: var(--muted); background: transparent;
   white-space: nowrap; transition: all .15s; user-select: none; min-height: 36px;
   display: inline-flex; align-items: center;
 }
-.chip.active { background: var(--accent); color: #0f0f13; border-color: var(--accent); }
-.chip.paid { border-color: var(--green); color: var(--green); }
-.chip.paid-unavailable { opacity: 0.45; cursor: default; border-color: var(--green); color: var(--green); }
+.chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chip.paid { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+.chip.paid::before { content: '✓ '; font-size: 10px; }
+.chip.paid-unavailable { opacity: 0.5; cursor: default; background: var(--green-bg); border-color: var(--green); color: var(--green); }
+.chip.paid-unavailable::before { content: '✓ '; font-size: 10px; }
 
 /* Section label */
 .section-label {
   font-size: 11px; font-weight: 700; letter-spacing: .08em;
-  text-transform: uppercase; color: #555; padding: 14px 20px 6px;
+  text-transform: uppercase; color: var(--muted); padding: 14px 20px 6px;
 }
 
 /* Group header */
 .group-header {
-  font-size: 11px; font-weight: 700; color: #444; text-transform: uppercase;
+  font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;
   letter-spacing: .06em; padding: 10px 20px 4px;
   background: var(--surface2); border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border); margin-top: 4px;
@@ -90,7 +92,7 @@ body {
 /* Item rows */
 .item {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 20px; border-bottom: 1px solid #1a1a27;
+  padding: 10px 20px; border-bottom: 1px solid var(--border);
   cursor: pointer; transition: background .1s;
 }
 .item:hover:not(.claimed-other):not(.no-guest) { background: var(--surface); }
@@ -98,19 +100,19 @@ body {
 .item.claimed-mine { background: var(--green-bg); border-left: 3px solid var(--green); padding-left: 17px; }
 .item.claimed-mine .item-name { color: var(--green); }
 .item.claimed-other { opacity: .45; cursor: default; }
-.item.claimed-other .item-name { text-decoration: line-through; color: #555; }
+.item.claimed-other .item-name { text-decoration: line-through; color: var(--muted); }
 .item-check {
-  width: 20px; height: 20px; border-radius: 50%; border: 2px solid #333;
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; font-size: 11px;
 }
-.item.claimed-mine .item-check { background: var(--green); border-color: var(--green); color: #0f0f13; }
-.item.claimed-other .item-check { background: #2a2a3a; border-color: #2a2a3a; color: #555; }
+.item.claimed-mine .item-check { background: var(--green); border-color: var(--green); color: #fff; }
+.item.claimed-other .item-check { background: var(--surface2); border-color: var(--surface2); color: var(--muted); }
 .item-info { flex: 1; min-width: 0; }
 .item-name { font-size: 13px; font-weight: 500; }
 .item-claimer { font-size: 11px; color: var(--muted); margin-top: 1px; }
 .item-price { font-size: 13px; font-weight: 600; color: var(--accent); white-space: nowrap; }
-.item.claimed-other .item-price { color: #444; }
+.item.claimed-other .item-price { color: var(--muted); }
 
 /* Charges */
 .charges-section { padding: 12px 20px; display: flex; flex-direction: column; gap: 5px; }
@@ -135,7 +137,7 @@ body {
   font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .15s;
 }
 .btn:disabled { opacity: .4; cursor: default; }
-.btn-green { background: var(--green); color: #0f0f13; }
+.btn-green { background: var(--green); color: #fff; }
 .btn-outline {
   background: transparent; border: 1.5px solid var(--border);
   color: var(--text); padding: 8px; font-size: 13px;
@@ -145,7 +147,7 @@ body {
 /* Settlement overlay */
 .settlement-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.92); z-index: 999;
+  background: rgba(246,246,245,.96); z-index: 999;
   align-items: center; justify-content: center;
   flex-direction: column; text-align: center; padding: 40px;
 }
@@ -173,13 +175,13 @@ body {
 .guest-name { flex: 1; font-weight: 600; }
 .guest-owed { font-size: 13px; color: var(--accent); }
 .guest-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 9999px; }
-.badge-pending { background: #2a2a3a; color: var(--muted); }
-.badge-paid { background: #1a2e1a; color: var(--green); border: 1px solid var(--green); }
+.badge-pending { background: var(--surface2); color: var(--muted); }
+.badge-paid { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
 
 /* Toast notification */
 #toast {
   position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-  background: #333; color: var(--text); padding: 10px 20px;
+  background: var(--accent); color: #fff; padding: 10px 20px;
   border-radius: 9999px; font-size: 13px; font-weight: 600;
   opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
   z-index: 500;
@@ -216,7 +218,7 @@ body {
 .item-empty { padding: 12px 20px; color: #555; font-size: 13px; }
 .setup-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 20px; border-bottom: 1px solid #1a1a27;
+  padding: 8px 20px; border-bottom: 1px solid var(--border);
 }
 .setup-item-name  { flex: 1; min-width: 0; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text); font-size: 13px; padding: 4px 2px; }
 .setup-item-qty   { width: 48px; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text); font-size: 13px; padding: 4px 2px; text-align: center; }
@@ -245,8 +247,9 @@ body {
 /* Locked chip (name bar after identity confirmed) */
 .chip.locked { opacity: 0.3; cursor: default; pointer-events: none; }
 
-/* Active + paid chip: green background overrides purple */
-.chip.active.paid { background: var(--green); color: #0f0f13; border-color: var(--green); }
+/* Active + paid chip: green fill */
+.chip.active.paid { background: var(--green); color: #fff; border-color: var(--green); }
+.chip.active.paid::before { content: '✓ '; font-size: 10px; }
 
 /* Two-button footer */
 .footer-actions { display: flex; flex-direction: column; gap: 8px; }
@@ -257,24 +260,3 @@ body {
 .btn-venmo.btn-disabled { opacity: 0.4; pointer-events: none; }
 .identity-confirm-bar { padding-top: 4px; }
 
-/* Light mode */
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f2f2f7;
-    --surface: #ffffff;
-    --surface2: #e8e8ed;
-    --border: #d1d1d6;
-    --text: #1c1c1e;
-    --muted: #8e8e93;
-    --accent: #7c3aed;
-    --green: #16a34a;
-    --green-bg: #f0fdf4;
-    --blue: #2563eb;
-    --blue-bg: #2563eb18;
-    --blue-border: #2563eb66;
-  }
-  .chip { border-color: #c7c7cc; color: #3a3a3c; }
-  .chip.active { color: #fff; }
-  #toast { background: #1c1c1e; }
-  .section-label { color: #8e8e93; }
-}
