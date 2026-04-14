@@ -87,6 +87,7 @@ test('claimed items persist after page refresh', async ({ page }) => {
 test('host page updates when guest pays', async ({ page, context }) => {
   const tabId = await createTab(page, { guests: ['Alice'] });
   const hostPage = page;
+  await hostPage.waitForURL(`/host/${tabId}`);
 
   const guestPage = await context.newPage();
   await guestPage.goto(`/tab/${tabId}`);

@@ -95,13 +95,19 @@ function renderMain() {
     const venmoHandle = tab.payment.handle.replace(/^@/, '');
     const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(venmoHandle)}&amount=${me.owed.toFixed(2)}&note=${encodeURIComponent(tab.name)}`;
     const venmoBtn = document.getElementById('venmo-btn');
-    venmoBtn.href = me.paid ? 'javascript:void(0)' : venmoUrl;
+    if (me.paid) {
+      venmoBtn.removeAttribute('href');
+    } else {
+      venmoBtn.href = venmoUrl;
+    }
     venmoBtn.textContent = me.paid ? '✓ Paid on Venmo' : `Pay ${fmt(me.owed)} on Venmo →`;
     venmoBtn.classList.toggle('btn-disabled', me.paid);
 
     const settleBtn = document.getElementById('settle-btn');
     settleBtn.disabled = me.paid;
     settleBtn.textContent = me.paid ? '✓ Settled' : "I've Paid ✓";
+  } else {
+    document.getElementById('footer').style.display = 'none';
   }
 }
 

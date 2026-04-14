@@ -80,7 +80,10 @@ async function handleReceiptFile(file) {
 }
 
 ['receipt-camera', 'receipt-library'].forEach(id => {
-  document.getElementById(id).addEventListener('change', e => handleReceiptFile(e.target.files[0]));
+  document.getElementById(id).addEventListener('change', e => {
+    handleReceiptFile(e.target.files[0]);
+    e.target.value = '';
+  });
 });
 
 window.createTab = async () => {
