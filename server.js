@@ -46,7 +46,8 @@ app.post('/api/receipt/parse', async (req, res) => {
           ],
         }],
       });
-      const items = JSON.parse(response.content[0].text.trim());
+      const raw = response.content[0].text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+      const items = JSON.parse(raw);
       res.json({ items });
     } catch (e) {
       res.status(400).json({ error: e.message });
