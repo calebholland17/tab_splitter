@@ -52,13 +52,13 @@ let receiptParsing = false;
 
 async function handleReceiptFile(file) {
   if (!file || receiptParsing) return;
-  if (!file.type.startsWith('image/')) {
-    document.getElementById('parse-status').textContent = 'Please select an image file.';
-    document.getElementById('parse-status').className = 'parse-status error';
+  const status = document.getElementById('parse-status');
+  if (file.type && !file.type.startsWith('image/')) {
+    status.textContent = 'Please select an image file.';
+    status.className = 'parse-status error';
     return;
   }
   receiptParsing = true;
-  const status = document.getElementById('parse-status');
   status.textContent = 'Scanning receipt…';
   status.className = 'parse-status';
   const form = new FormData();
