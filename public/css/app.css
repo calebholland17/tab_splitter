@@ -71,6 +71,7 @@ body {
 }
 .chip.active { background: var(--accent); color: #0f0f13; border-color: var(--accent); }
 .chip.paid { border-color: var(--green); color: var(--green); }
+.chip.paid-unavailable { opacity: 0.45; cursor: default; border-color: var(--green); color: var(--green); }
 
 /* Section label */
 .section-label {
@@ -255,3 +256,25 @@ body {
 }
 .btn-venmo.btn-disabled { opacity: 0.4; pointer-events: none; }
 .identity-confirm-bar { padding-top: 4px; }
+
+/* Light mode */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --surface2: #e8e8ed;
+    --border: #d1d1d6;
+    --text: #1c1c1e;
+    --muted: #8e8e93;
+    --accent: #7c3aed;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --blue: #2563eb;
+    --blue-bg: #2563eb18;
+    --blue-border: #2563eb66;
+  }
+  .chip { border-color: #c7c7cc; color: #3a3a3c; }
+  .chip.active { color: #fff; }
+  #toast { background: #1c1c1e; }
+  .section-label { color: #8e8e93; }
+}

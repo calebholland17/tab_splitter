@@ -35,7 +35,7 @@ function renderIdentityPicker() {
 
   document.getElementById('identity-chips').innerHTML = tab.guests.map(g => {
     if (g.paid) {
-      return `<div class="chip paid locked">${esc(g.name)} ✓</div>`;
+      return `<div class="chip paid-unavailable" onclick="showToast('${esc(g.name)} has already paid ✓')">${esc(g.name)} ✓</div>`;
     }
     return `<div class="chip ${g.id === pendingGuestId ? 'active' : ''}"
       onclick="pickGuest('${esc(g.id)}')">${esc(g.name)}</div>`;
