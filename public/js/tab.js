@@ -7,6 +7,16 @@ const SESSION_KEY = `tab_identity_${tabId}`;
 let myGuestId = sessionStorage.getItem(SESSION_KEY) || null;
 let identityLocked = !!myGuestId;
 
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+function venmoUrl(handle, amount, note) {
+  const h = handle.replace(/^@/, '');
+  if (isMobile) {
+    return `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(h)}&amount=${Number(amount).toFixed(2)}&note=${encodeURIComponent(note)}`;
+  }
+  return `https://venmo.com/u/${encodeURIComponent(h)}`;
+}
+
 function fmt(n) { return '$' + Number(n).toFixed(2); }
 
 function esc(s) {
@@ -96,13 +106,11 @@ function renderMain() {
     document.getElementById('footer-fees').textContent = `+ ${fmt(Math.max(0, me.owed - me.subtotal))}`;
     document.getElementById('footer-owed').textContent = fmt(me.owed);
 
-    const venmoHandle = tab.payment.handle.replace(/^@/, '');
-    const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(venmoHandle)}&amount=${me.owed.toFixed(2)}&note=${encodeURIComponent(tab.name)}`;
     const venmoBtn = document.getElementById('venmo-btn');
     if (me.paid) {
       venmoBtn.removeAttribute('href');
     } else {
-      venmoBtn.href = venmoUrl;
+      venmoBtn.href = venmoUrl(tab.payment.handle, me.owed, tab.name);
     }
     venmoBtn.textContent = me.paid ? '✓ Paid on Venmo' : `Pay ${fmt(me.owed)} on Venmo →`;
     venmoBtn.classList.toggle('btn-disabled', me.paid);
@@ -121,9 +129,8 @@ function render(tabData) {
   document.getElementById('tab-meta').textContent =
     `${tab.guests.length} guests · ${fmt(tab.charges.total)} total`;
   document.getElementById('payment-handle').textContent = tab.payment.handle;
-  const venmoHandle = tab.payment.handle.replace(/^@/, '');
   document.getElementById('payment-platform').innerHTML =
-    `<a href="venmo://paycharge?txn=pay&recipients=${encodeURIComponent(venmoHandle)}" class="pm-badge-link">${esc(tab.payment.platform)}</a>`;
+    `<a href="${venmoUrl(tab.payment.handle, 0, tab.name)}" class="pm-badge-link">${esc(tab.payment.platform)}</a>`;
 
   // Clear pendingGuestId if the guest was removed from the tab
   if (pendingGuestId && !tab.guests.find(g => g.id === pendingGuestId)) {
