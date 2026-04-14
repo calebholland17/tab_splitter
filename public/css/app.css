@@ -225,3 +225,26 @@ body {
 .create-btn-bar { padding: 20px 20px 40px; }
 .upload-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .upload-btns .upload-btn { flex: 1; justify-content: center; }
+
+/* Identity picker */
+#identity-picker {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 20px;
+}
+.identity-prompt { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+.identity-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.identity-chips .chip { font-size: 13px; padding: 10px 18px; }
+
+/* Locked chip (name bar after identity confirmed) */
+.chip.locked { opacity: 0.3; cursor: default; pointer-events: none; }
+
+/* Active + paid chip: green background overrides purple */
+.chip.active.paid { background: var(--green); color: #0f0f13; border-color: var(--green); }
+
+/* Two-button footer */
+.footer-actions { display: flex; flex-direction: column; gap: 8px; }
+.btn-venmo {
+  background: var(--blue-bg); border: 1.5px solid var(--blue-border);
+  color: var(--blue); text-decoration: none; text-align: center; display: block;
+}
+.btn-venmo.btn-disabled { opacity: 0.4; pointer-events: none; }
