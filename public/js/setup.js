@@ -9,6 +9,52 @@ function esc(s) {
 
 let items = [];
 
+const DRAFT_KEY = 'tabsplitter_draft';
+
+function saveState() {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      items,
+      tabName:       document.getElementById('tab-name').value,
+      paymentHandle: document.getElementById('payment-handle').value,
+      surcharge:     document.getElementById('charge-surcharge').value,
+      tax:           document.getElementById('charge-tax').value,
+      gratuity:      document.getElementById('charge-gratuity').value,
+      guests:        document.getElementById('guest-names').value,
+    }));
+  } catch (e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (Array.isArray(s.items))       items = s.items;
+    if (s.tabName)                    document.getElementById('tab-name').value = s.tabName;
+    if (s.paymentHandle)              document.getElementById('payment-handle').value = s.paymentHandle;
+    if (s.surcharge != null)          document.getElementById('charge-surcharge').value = s.surcharge;
+    if (s.tax != null)                document.getElementById('charge-tax').value = s.tax;
+    if (s.gratuity != null)           document.getElementById('charge-gratuity').value = s.gratuity;
+    if (s.guests)                     document.getElementById('guest-names').value = s.guests;
+  } catch (e) {}
+}
+
+window.clearDraft = function () {
+  if (!confirm('Start over? This will clear all items and details.')) return;
+  localStorage.removeItem(DRAFT_KEY);
+  items = [];
+  document.getElementById('tab-name').value = '';
+  document.getElementById('payment-handle').value = '';
+  document.getElementById('charge-surcharge').value = '0';
+  document.getElementById('charge-tax').value = '0';
+  document.getElementById('charge-gratuity').value = '0';
+  document.getElementById('guest-names').value = '';
+  document.getElementById('parse-status').textContent = '';
+  document.getElementById('parse-status').className = 'parse-status';
+  renderItems();
+};
+
 function recalcTotal() {
   const subtotal = items.reduce((s, item) => s + item.price * item.qty, 0);
   const surcharge = parseFloat(document.getElementById('charge-surcharge').value) || 0;
@@ -41,12 +87,16 @@ function renderItems() {
   recalcTotal();
 }
 
-window.updateItem = (i, field, val) => { items[i][field] = val; recalcTotal(); };
-window.removeItem = (i) => { items.splice(i, 1); renderItems(); };
-window.addItem    = () => { items.push({ name: '', price: 0, qty: 1 }); renderItems(); };
+window.updateItem = (i, field, val) => { items[i][field] = val; recalcTotal(); saveState(); };
+window.removeItem = (i) => { items.splice(i, 1); renderItems(); saveState(); };
+window.addItem    = () => { items.push({ name: '', price: 0, qty: 1 }); renderItems(); saveState(); };
 
 ['charge-surcharge', 'charge-tax', 'charge-gratuity'].forEach(id => {
-  document.getElementById(id).addEventListener('input', recalcTotal);
+  document.getElementById(id).addEventListener('input', () => { recalcTotal(); saveState(); });
+});
+
+['tab-name', 'payment-handle', 'guest-names'].forEach(id => {
+  document.getElementById(id).addEventListener('input', saveState);
 });
 
 let receiptParsing = false;
@@ -77,6 +127,7 @@ async function handleReceiptFile(file) {
     }
 
     renderItems(); // also calls recalcTotal()
+    saveState();
 
     let msg = `✓ Found ${items.length} item type${items.length === 1 ? '' : 's'}`;
     if (data.receiptTotal) {
@@ -139,6 +190,7 @@ window.createTab = async () => {
     });
     const data = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
     if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
+    localStorage.removeItem(DRAFT_KEY);
     window.location.href = `/host/${data.tabId}`;
   } catch (err) {
     alert(`Failed to create tab: ${err.message}`);
@@ -147,4 +199,5 @@ window.createTab = async () => {
   }
 };
 
+loadState();
 renderItems();
