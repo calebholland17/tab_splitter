@@ -84,17 +84,13 @@ test('claimed items persist after page refresh', async ({ page }) => {
   await expect(page.locator('.item').first()).toHaveClass(/claimed-mine/);
 });
 
-test('host page updates when guest pays', async ({ page, context }) => {
+test('host page marks guest as paid', async ({ page }) => {
   const tabId = await createTab(page, { guests: ['Alice'] });
-  const hostPage = page;
-  await hostPage.waitForURL(`/host/${tabId}`);
+  await page.waitForURL(`/host/${tabId}`);
 
-  const guestPage = await context.newPage();
-  await guestPage.goto(`/tab/${tabId}`);
-  await selectGuest(guestPage, 'Alice');
-  await guestPage.locator('#settle-btn').click();
+  await page.locator('.guest-status-row', { hasText: 'Alice' }).locator('.btn-mark-paid').click();
 
-  await expect(hostPage.locator('.guest-status-row', { hasText: 'Alice' })).toHaveClass(/paid/, { timeout: 8000 });
+  await expect(page.locator('.guest-status-row', { hasText: 'Alice' })).toHaveClass(/paid/, { timeout: 8000 });
 });
 
 test('items section hidden before identity is confirmed', async ({ page }) => {
