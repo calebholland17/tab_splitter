@@ -115,9 +115,6 @@ function renderMain() {
     venmoBtn.textContent = me.paid ? '✓ Paid on Venmo' : `Pay ${fmt(me.owed)} on Venmo →`;
     venmoBtn.classList.toggle('btn-disabled', me.paid);
 
-    const settleBtn = document.getElementById('settle-btn');
-    settleBtn.disabled = me.paid;
-    settleBtn.textContent = me.paid ? '✓ Settled' : "I've Paid ✓";
   } else {
     document.getElementById('footer').style.display = 'none';
   }
@@ -203,21 +200,6 @@ window.toggle = function (itemId) {
     .then(data => { if (!data.error) render(data); })
     .catch(() => showToast('Something went wrong, please try again'));
 };
-
-document.getElementById('settle-btn').addEventListener('click', () => {
-  if (!myGuestId) return;
-  fetch(`/api/tabs/${tabId}/paid`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ guestId: myGuestId }),
-  })
-    .then(r => r.json())
-    .then(data => {
-      if (data.tab) render(data.tab);
-      if (data.settled) showSettled();
-    })
-    .catch(() => showToast('Something went wrong, please try again'));
-});
 
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) {

@@ -23,9 +23,10 @@ function render(tab) {
     <div class="guest-status-row ${g.paid ? 'paid' : ''}">
       <span class="guest-name">${esc(g.name)}</span>
       <span class="guest-owed">${fmt(g.owed)}</span>
-      <span class="guest-badge ${g.paid ? 'badge-paid' : 'badge-pending'}">
-        ${g.paid ? 'Paid ✓' : 'Pending'}
-      </span>
+      ${g.paid
+        ? `<span class="guest-badge badge-paid">Paid ✓</span>`
+        : `<button class="btn-mark-paid" onclick="markPaid('${esc(g.id)}')">Mark Paid</button>`
+      }
     </div>
   `).join('');
 
@@ -33,6 +34,17 @@ function render(tab) {
     document.getElementById('settlement-overlay').classList.add('visible');
   }
 }
+
+window.markPaid = function (guestId) {
+  fetch(`/api/tabs/${tabId}/paid`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ guestId }),
+  })
+    .then(r => r.json())
+    .then(data => { if (data.tab) render(data.tab); })
+    .catch(() => {});
+};
 
 window.copyLink = function () {
   const btn = document.getElementById('copy-btn');
