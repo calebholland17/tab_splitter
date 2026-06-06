@@ -1,0 +1,8 @@
+node_modules
+.env
+tabsplitter.db
+tabsplitter.db-shm
+tabsplitter.db-wal
+test-results
+.git
+docs
