@@ -6,3 +6,5 @@ tabsplitter.db-wal
 test-results
 .git
 docs
+tests
+playwright.config.js
