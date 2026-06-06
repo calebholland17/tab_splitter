@@ -6,6 +6,7 @@ primary_region = "ord"
 [env]
   PORT = "3000"
   DB_PATH = "/data/tabsplitter.db"
+  NODE_ENV = "production"
 
 [http_service]
   internal_port = 3000
