@@ -56,7 +56,7 @@ window.clearDraft = function () {
 };
 
 function recalcTotal() {
-  const subtotal = items.reduce((s, item) => s + item.price * item.qty, 0);
+  const subtotal = items.reduce((s, item) => s + (item.splitMode ? item.price : item.price * item.qty), 0);
   const surcharge = parseFloat(document.getElementById('charge-surcharge').value) || 0;
   const tax       = parseFloat(document.getElementById('charge-tax').value) || 0;
   const gratuity  = parseFloat(document.getElementById('charge-gratuity').value) || 0;
@@ -181,7 +181,12 @@ window.createTab = async () => {
   if (items.length === 0) return alert('Please add at least one item.');
   if (guests.length === 0) return alert('Please add at least one guest name.');
 
-  const subtotal = Math.round(items.reduce((s, i) => s + i.price * i.qty, 0) * 100) / 100;
+  const itemsToSend = items.map(({ name, qty, price, splitMode }) => ({
+    name,
+    qty,
+    price: splitMode && qty > 0 ? price / qty : price,
+  }));
+  const subtotal = Math.round(itemsToSend.reduce((s, i) => s + i.price * i.qty, 0) * 100) / 100;
   const total    = Math.round((subtotal + surcharge + tax + gratuity) * 100) / 100;
   const charges  = { subtotal, surcharge, tax, gratuity, total };
 
@@ -193,7 +198,7 @@ window.createTab = async () => {
     const res  = await fetch('/api/tabs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, paymentHandle, paymentPlatform, charges, guests, items }),
+      body: JSON.stringify({ name, paymentHandle, paymentPlatform, charges, guests, items: itemsToSend }),
     });
     const data = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
     if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
