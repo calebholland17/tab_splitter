@@ -74,13 +74,9 @@ test('claimed items persist after page refresh', async ({ page }) => {
   await firstItem.click();
   await expect(firstItem).toHaveClass(/claimed-mine/);
 
-  // Reload — identity resets, item still claimed
+  // Reload — identity persists in sessionStorage, item still claimed-mine
   await page.reload();
-  await expect(page.locator('#identity-picker')).toBeVisible();
-  await expect(page.locator('.item').first()).toBeHidden(); // items hidden until name picked
-
-  // Re-select Alice — item shows as claimed-mine again
-  await selectGuest(page, 'Alice');
+  await expect(page.locator('#items-section')).toBeVisible();
   await expect(page.locator('.item').first()).toHaveClass(/claimed-mine/);
 });
 
@@ -100,4 +96,37 @@ test('items section hidden before identity is confirmed', async ({ page }) => {
   await expect(page.locator('#identity-picker')).toBeVisible();
   await expect(page.locator('#items-section')).toBeHidden();
   await expect(page.locator('#footer')).toBeHidden();
+});
+
+test('split mode shows per-person label and sends divided price to server', async ({ page }) => {
+  await page.goto('/');
+  await page.fill('#tab-name', 'Split Test');
+  await page.fill('#payment-handle', '@tester');
+  await page.fill('#guest-names', 'Alice\nBob\nCharlie');
+
+  await page.click('button:has-text("+ Add Item")');
+  const row = page.locator('.setup-item').last();
+  await row.locator('.setup-item-name').fill('Wine');
+  await row.locator('.setup-item-qty').fill('3');
+  await row.locator('.setup-item-price').fill('30.00');
+  // Toggle to split mode AFTER filling values so renderItems() sees qty=3, price=30
+  await row.locator('.setup-item-operator').click();
+
+  // Per-person label should show $10.00
+  await expect(row.locator('.setup-item-each')).toHaveText('= $10.00 each');
+
+  // Create the tab
+  await page.click('#create-btn');
+  await page.waitForURL(/\/host\//);
+  const tabId = page.url().split('/').filter(Boolean).pop();
+
+  // Guest page should show 3 claimable Wine items at $10.00 each
+  await page.goto(`/tab/${tabId}`);
+  await page.locator('#identity-chips .chip', { hasText: 'Alice' }).click();
+  await page.locator('#confirm-identity-btn').click();
+  await expect(page.locator('#items-section')).toBeVisible();
+
+  const wineItems = page.locator('.item', { hasText: 'Wine' });
+  await expect(wineItems).toHaveCount(3);
+  await expect(wineItems.first().locator('.item-price')).toHaveText('$10.00');
 });
