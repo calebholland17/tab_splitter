@@ -72,8 +72,8 @@ function renderItems() {
     return;
   }
   el.innerHTML = items.map((item, i) => {
-    const eachLabel = item.splitMode && item.qty > 0 && item.price > 0
-      ? `<span class="setup-item-each">= $${(item.price / item.qty).toFixed(2)} each</span>`
+    const eachText = item.splitMode && item.qty > 0 && item.price > 0
+      ? `= $${(item.price / item.qty).toFixed(2)} each`
       : '';
     return `
     <div class="setup-item">
@@ -85,7 +85,7 @@ function renderItems() {
       <input class="setup-item-price" type="number" value="${item.price > 0 ? item.price.toFixed(2) : ''}"
         step="0.01" min="0" inputmode="decimal" placeholder="${item.splitMode ? 'Total' : '0.00'}"
         oninput="updateItem(${i},'price',+this.value)" onfocus="this.select()">
-      ${eachLabel}
+      <span class="setup-item-each">${eachText}</span>
       <button class="btn-remove" onclick="removeItem(${i})">✕</button>
     </div>
   `;
@@ -93,7 +93,19 @@ function renderItems() {
   recalcTotal();
 }
 
-window.updateItem = (i, field, val) => { items[i][field] = val; recalcTotal(); saveState(); };
+window.updateItem = (i, field, val) => {
+  items[i][field] = val;
+  recalcTotal();
+  saveState();
+  if (items[i].splitMode) {
+    const eachEl = document.querySelectorAll('.setup-item')[i]?.querySelector('.setup-item-each');
+    if (eachEl) {
+      eachEl.textContent = items[i].qty > 0 && items[i].price > 0
+        ? `= $${(items[i].price / items[i].qty).toFixed(2)} each`
+        : '';
+    }
+  }
+};
 window.toggleSplitMode = (i) => { items[i].splitMode = !items[i].splitMode; renderItems(); saveState(); };
 window.removeItem = (i) => { items.splice(i, 1); renderItems(); saveState(); };
 window.addItem    = () => { items.push({ name: '', price: 0, qty: 1, splitMode: false }); renderItems(); saveState(); };
@@ -179,6 +191,7 @@ window.createTab = async () => {
   if (!name)             return alert('Please enter a tab name.');
   if (!paymentHandle)   return alert('Please enter a payment handle (e.g. @Caleb-Holland-3).');
   if (items.length === 0) return alert('Please add at least one item.');
+  if (items.some(item => item.splitMode && item.qty <= 0)) return alert('Split items must have at least 1 person sharing.');
   if (guests.length === 0) return alert('Please add at least one guest name.');
 
   const itemsToSend = items.map(({ name, qty, price, splitMode }) => ({
