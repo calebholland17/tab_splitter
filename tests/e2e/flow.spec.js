@@ -122,9 +122,7 @@ test('split mode shows per-person label and sends divided price to server', asyn
 
   // Guest page should show 3 claimable Wine items at $10.00 each
   await page.goto(`/tab/${tabId}`);
-  await page.locator('#identity-chips .chip', { hasText: 'Alice' }).click();
-  await page.locator('#confirm-identity-btn').click();
-  await expect(page.locator('#items-section')).toBeVisible();
+  await selectGuest(page, 'Alice');
 
   const wineItems = page.locator('.item', { hasText: 'Wine' });
   await expect(wineItems).toHaveCount(3);
