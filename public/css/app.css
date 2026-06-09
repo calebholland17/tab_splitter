@@ -236,7 +236,14 @@ body {
 .setup-item-qty   { width: 48px; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text); font-size: 13px; padding: 4px 2px; text-align: center; }
 .setup-item-price { width: 64px; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--accent); font-size: 13px; padding: 4px 2px; text-align: right; }
 .setup-item-name:focus, .setup-item-qty:focus, .setup-item-price:focus { outline: none; border-bottom-color: var(--accent); }
-.setup-item-x { color: #555; font-size: 12px; }
+.setup-item-operator {
+  background: none; border: none; color: var(--muted); font-size: 12px;
+  cursor: pointer; padding: 4px 2px; border-radius: 3px;
+  transition: color .1s; font-family: inherit;
+}
+.setup-item-operator:hover { color: var(--text); }
+.setup-item-operator.split { color: var(--accent); font-weight: 600; }
+.setup-item-each { color: var(--muted); font-size: 11px; white-space: nowrap; }
 .btn-remove {
   background: none; border: none; color: #555; cursor: pointer;
   font-size: 14px; padding: 4px 6px; border-radius: 4px; transition: color .1s;
