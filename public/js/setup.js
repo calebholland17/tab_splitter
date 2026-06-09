@@ -30,7 +30,7 @@ function loadState() {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return;
     const s = JSON.parse(raw);
-    if (Array.isArray(s.items))       items = s.items;
+    if (Array.isArray(s.items))       items = s.items.map(i => ({ ...i, splitMode: !!i.splitMode }));
     if (s.tabName)                    document.getElementById('tab-name').value = s.tabName;
     if (s.paymentHandle)              document.getElementById('payment-handle').value = s.paymentHandle;
     if (s.surcharge != null)          document.getElementById('charge-surcharge').value = s.surcharge;
@@ -71,25 +71,32 @@ function renderItems() {
     recalcTotal();
     return;
   }
-  el.innerHTML = items.map((item, i) => `
+  el.innerHTML = items.map((item, i) => {
+    const eachLabel = item.splitMode && item.qty > 0
+      ? `<span class="setup-item-each">= $${(item.price / item.qty).toFixed(2)} each</span>`
+      : '';
+    return `
     <div class="setup-item">
       <input class="setup-item-name" value="${esc(item.name)}"
         placeholder="Item name" oninput="updateItem(${i},'name',this.value)">
       <input class="setup-item-qty" type="number" value="${item.qty}" min="1"
         oninput="updateItem(${i},'qty',+this.value)">
-      <span class="setup-item-x">×</span>
+      <button class="setup-item-operator${item.splitMode ? ' split' : ''}" onclick="toggleSplitMode(${i})">${item.splitMode ? '÷' : '×'}</button>
       <input class="setup-item-price" type="number" value="${item.price > 0 ? item.price.toFixed(2) : ''}"
-        step="0.01" min="0" inputmode="decimal" placeholder="0.00"
+        step="0.01" min="0" inputmode="decimal" placeholder="${item.splitMode ? 'Total' : '0.00'}"
         oninput="updateItem(${i},'price',+this.value)" onfocus="this.select()">
+      ${eachLabel}
       <button class="btn-remove" onclick="removeItem(${i})">✕</button>
     </div>
-  `).join('');
+  `;
+  }).join('');
   recalcTotal();
 }
 
 window.updateItem = (i, field, val) => { items[i][field] = val; recalcTotal(); saveState(); };
+window.toggleSplitMode = (i) => { items[i].splitMode = !items[i].splitMode; renderItems(); saveState(); };
 window.removeItem = (i) => { items.splice(i, 1); renderItems(); saveState(); };
-window.addItem    = () => { items.push({ name: '', price: 0, qty: 1 }); renderItems(); saveState(); };
+window.addItem    = () => { items.push({ name: '', price: 0, qty: 1, splitMode: false }); renderItems(); saveState(); };
 
 ['charge-surcharge', 'charge-tax', 'charge-gratuity'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => { recalcTotal(); saveState(); });
