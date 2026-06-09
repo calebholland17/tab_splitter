@@ -72,7 +72,7 @@ function renderItems() {
     return;
   }
   el.innerHTML = items.map((item, i) => {
-    const eachLabel = item.splitMode && item.qty > 0
+    const eachLabel = item.splitMode && item.qty > 0 && item.price > 0
       ? `<span class="setup-item-each">= $${(item.price / item.qty).toFixed(2)} each</span>`
       : '';
     return `
@@ -125,7 +125,7 @@ async function handleReceiptFile(file) {
     const res  = await fetch('/api/receipt/parse', { method: 'POST', body: form });
     const data = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
     if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
-    items = data.items.map(i => ({ name: i.name, price: Number(i.price), qty: Number(i.qty) }));
+    items = data.items.map(i => ({ name: i.name, price: Number(i.price), qty: Number(i.qty), splitMode: false }));
 
     if (data.charges) {
       document.getElementById('charge-surcharge').value = Number(data.charges.surcharge || 0).toFixed(2);
