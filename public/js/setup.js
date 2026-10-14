@@ -79,12 +79,14 @@ function renderItems() {
     <div class="setup-item">
       <input class="setup-item-name" value="${esc(item.name)}"
         placeholder="Item name" oninput="updateItem(${i},'name',this.value)">
-      <input class="setup-item-qty" type="number" value="${item.qty}" min="1"
-        oninput="updateItem(${i},'qty',+this.value)">
+      <input class="setup-item-qty" type="text" inputmode="numeric" value="${item.qty}"
+        onkeydown="calcKeydown(event)" onfocus="calcFocus(event)" onblur="resolveCalcField(this,{integer:true,min:1})"
+        oninput="updateItem(${i},'qty',parseFloat(this.value)||0)">
       <button class="setup-item-operator${item.splitMode ? ' split' : ''}" onclick="toggleSplitMode(${i})">${item.splitMode ? '÷' : '×'}</button>
-      <input class="setup-item-price" type="number" value="${item.price > 0 ? item.price.toFixed(2) : ''}"
-        step="0.01" min="0" inputmode="decimal" placeholder="${item.splitMode ? 'Total' : '0.00'}"
-        oninput="updateItem(${i},'price',+this.value)" onfocus="this.select()">
+      <input class="setup-item-price" type="text" inputmode="decimal" value="${item.price > 0 ? item.price.toFixed(2) : ''}"
+        placeholder="${item.splitMode ? 'Total' : '0.00'}"
+        onkeydown="calcKeydown(event)" onfocus="calcFocus(event)" onblur="resolveCalcField(this,{integer:false,min:0})"
+        oninput="updateItem(${i},'price',parseFloat(this.value)||0)">
       <span class="setup-item-each">${eachText}</span>
       <button class="btn-remove" onclick="removeItem(${i})">✕</button>
     </div>
@@ -110,8 +112,45 @@ window.toggleSplitMode = (i) => { items[i].splitMode = !items[i].splitMode; rend
 window.removeItem = (i) => { items.splice(i, 1); renderItems(); saveState(); };
 window.addItem    = () => { items.push({ name: '', price: 0, qty: 1, splitMode: false }); renderItems(); saveState(); };
 
+function calcKeydown(e) {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Home', 'End'];
+  if (allowed.includes(e.key)) return;
+  if (/^[0-9+\-*/.()]$/.test(e.key)) return;
+  e.preventDefault();
+}
+
+function calcFocus(e) {
+  e.target.dataset.prevValue = e.target.value;
+  e.target.select();
+}
+
+function resolveCalcField(el, { integer = false, min = 0 } = {}) {
+  const raw = el.value.trim();
+  if (raw === '') return;
+  const result = evalMathExpr(raw);
+  if (result === null) {
+    el.value = el.dataset.prevValue || '';
+  } else {
+    const value = Math.max(min, result);
+    el.value = integer ? String(Math.round(value)) : value.toFixed(2);
+  }
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+window.calcKeydown = calcKeydown;
+window.calcFocus = calcFocus;
+window.resolveCalcField = resolveCalcField;
+
+window.openHelp  = () => document.getElementById('help-overlay').classList.add('visible');
+window.closeHelp = () => document.getElementById('help-overlay').classList.remove('visible');
+
 ['charge-surcharge', 'charge-tax', 'charge-gratuity'].forEach(id => {
-  document.getElementById(id).addEventListener('input', () => { recalcTotal(); saveState(); });
+  const field = document.getElementById(id);
+  field.addEventListener('input', () => { recalcTotal(); saveState(); });
+  field.addEventListener('keydown', calcKeydown);
+  field.addEventListener('focus', calcFocus);
+  field.addEventListener('blur', () => resolveCalcField(field, { integer: false, min: 0 }));
 });
 
 ['tab-name', 'payment-handle', 'guest-names'].forEach(id => {

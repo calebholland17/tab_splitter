@@ -232,3 +232,6 @@ function poll() {
 }
 poll();
 pollInterval = setInterval(poll, 2000);
+
+window.openHelp  = () => document.getElementById('help-overlay').classList.add('visible');
+window.closeHelp = () => document.getElementById('help-overlay').classList.remove('visible');

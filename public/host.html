@@ -9,6 +9,7 @@
 <body>
   <div class="wide">
     <div class="header" style="position:relative;border-radius:10px;margin-bottom:20px;">
+      <button class="btn-help floating" id="help-btn" onclick="openHelp()" aria-label="Help">?</button>
       <h1 id="tab-name">Loading…</h1>
       <div class="meta">Host View</div>
     </div>
@@ -31,6 +32,18 @@
     <h1>🎉</h1>
     <h2>All Settled!</h2>
     <p>Everyone has paid. Enjoy your night.</p>
+  </div>
+
+  <div class="help-overlay" id="help-overlay">
+    <div class="help-card">
+      <button class="help-close" id="help-close" onclick="closeHelp()" aria-label="Close">✕</button>
+      <h2>Host view</h2>
+      <p>This page is just for you, the host — guests see a different page where they pick their name and claim items.</p>
+      <h3>Sharing the tab</h3>
+      <p>Use <strong>Copy Link</strong> to send the guest link again any time — it's the same link for everyone, and it's safe to re-share.</p>
+      <h3>Marking someone as paid</h3>
+      <p>TabSplitter doesn't connect to Venmo directly. When a guest pays, you'll get a Venmo notification — once you see it, tap <strong>Mark Paid</strong> next to their name. Guests can't mark themselves paid.</p>
+    </div>
   </div>
 
   <script src="/js/host.js"></script>

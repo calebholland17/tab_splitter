@@ -8,12 +8,15 @@
 </head>
 <body>
   <div class="app">
-    <div class="header" style="display:flex;align-items:center;justify-content:space-between;">
+    <div class="header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
       <div>
         <h1>TabSplitter</h1>
         <div class="meta">Create a new tab</div>
       </div>
-      <button class="btn-change-identity" onclick="clearDraft()">Start Over</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn-help" id="help-btn" onclick="openHelp()" aria-label="Help">?</button>
+        <button class="btn-change-identity" onclick="clearDraft()">Start Over</button>
+      </div>
     </div>
 
     <div class="section-label">RECEIPT</div>
@@ -54,17 +57,17 @@
       <div class="setup-row">
         <div class="setup-field">
           <label class="setup-label">Surcharge ($)</label>
-          <input id="charge-surcharge" class="setup-input" type="number" step="0.01" min="0" value="0">
+          <input id="charge-surcharge" class="setup-input calc-field" type="text" inputmode="decimal" value="0">
         </div>
         <div class="setup-field">
           <label class="setup-label">Tax ($)</label>
-          <input id="charge-tax" class="setup-input" type="number" step="0.01" min="0" value="0">
+          <input id="charge-tax" class="setup-input calc-field" type="text" inputmode="decimal" value="0">
         </div>
       </div>
       <div class="setup-row">
         <div class="setup-field">
           <label class="setup-label">Gratuity ($)</label>
-          <input id="charge-gratuity" class="setup-input" type="number" step="0.01" min="0" value="0">
+          <input id="charge-gratuity" class="setup-input calc-field" type="text" inputmode="decimal" value="0">
         </div>
         <div class="setup-field">
           <label class="setup-label">Total ($)</label>
@@ -86,6 +89,31 @@
       <button class="btn btn-green" id="create-btn" onclick="createTab()">Create Tab →</button>
     </div>
   </div>
+
+  <div class="help-overlay" id="help-overlay">
+    <div class="help-card">
+      <button class="help-close" id="help-close" onclick="closeHelp()" aria-label="Close">✕</button>
+      <h2>How to set up a tab</h2>
+
+      <h3>1. Scan the receipt, then check the items</h3>
+      <p>The scanner is usually right, but always scroll through the item list afterward and compare it against the receipt — names, quantities, and per-item prices.</p>
+
+      <div class="help-callout">
+        <strong>Known quirk:</strong> for a line like "4 Miller Lite&nbsp;&nbsp;$24.00", the scanner sometimes keeps $24.00 as the price for <em>each</em> of the 4, instead of $6.00 each. Always check that price × qty roughly matches the line on the receipt.
+      </div>
+
+      <h3>2. Fixing a price with the ÷ split toggle</h3>
+      <p>If an item's price is really the <em>total</em> for everyone sharing it, click the <strong>×</strong> button next to it to flip it to <strong>÷</strong>. The number you type is now the total — it's divided by the quantity automatically, and you'll see "= $X.XX each" appear.</p>
+
+      <h3>3. Quick math in any price field</h3>
+      <p>You can type a calculation directly into any item or fee price field — e.g. type <code>24/4</code> and tab or click away, and it resolves to <code>6.00</code>. Handy for fixing a scanner mistake without doing the division yourself.</p>
+
+      <h3>4. Double-check the total</h3>
+      <p>If you entered a receipt total during scanning, a warning appears if your item/fee totals don't match it — that's usually a sign something above still needs fixing.</p>
+    </div>
+  </div>
+
+  <script src="/js/calc.js"></script>
   <script src="/js/setup.js"></script>
 </body>
 </html>

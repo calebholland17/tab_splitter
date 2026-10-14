@@ -128,3 +128,28 @@ test('split mode shows per-person label and sends divided price to server', asyn
   await expect(wineItems).toHaveCount(3);
   await expect(wineItems.first().locator('.item-price')).toHaveText('$10.00');
 });
+
+test('help icon opens and closes the help overlay on the setup page', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#help-overlay')).toBeHidden();
+
+  await page.click('#help-btn');
+  await expect(page.locator('#help-overlay')).toBeVisible();
+
+  await page.click('#help-close');
+  await expect(page.locator('#help-overlay')).toBeHidden();
+});
+
+test('item price field resolves a typed math expression on blur', async ({ page }) => {
+  await page.goto('/');
+  await page.click('button:has-text("+ Add Item")');
+  const row = page.locator('.setup-item').last();
+  await row.locator('.setup-item-name').fill('Miller Lite');
+  await row.locator('.setup-item-qty').fill('4');
+
+  const priceField = row.locator('.setup-item-price');
+  await priceField.fill('24/4');
+  await row.locator('.setup-item-name').click(); // blur the price field
+
+  await expect(priceField).toHaveValue('6.00');
+});

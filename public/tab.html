@@ -8,7 +8,8 @@
 </head>
 <body>
   <div class="app">
-    <div class="header">
+    <div class="header" style="position:relative;">
+      <button class="btn-help floating" id="help-btn" onclick="openHelp()" aria-label="Help">?</button>
       <h1 id="tab-name">Loading…</h1>
       <div class="meta" id="tab-meta"></div>
     </div>
@@ -60,6 +61,21 @@
     <h1>🎉</h1>
     <h2>All Settled!</h2>
     <p>Everyone has paid. Enjoy your night.</p>
+  </div>
+
+  <div class="help-overlay" id="help-overlay">
+    <div class="help-card">
+      <button class="help-close" id="help-close" onclick="closeHelp()" aria-label="Close">✕</button>
+      <h2>How this works</h2>
+      <h3>Pick your name</h3>
+      <p>Tap your name once at the start. It's remembered on this device, so you won't have to pick it again unless you tap <strong>Change</strong>.</p>
+      <h3>Claim your items</h3>
+      <p>Tap an item to claim it; tap again to release it. Items someone else already claimed are greyed out.</p>
+      <h3>What you owe</h3>
+      <p>Your total includes your share of tax, surcharge, and gratuity, split proportionally based on what you claimed — not divided evenly.</p>
+      <h3>Paying</h3>
+      <p>Tap <strong>Pay on Venmo</strong> — it opens Venmo with the amount and note pre-filled. The host will mark you as paid once they see the payment come through.</p>
+    </div>
   </div>
 
   <script src="/js/tab.js"></script>
