@@ -294,7 +294,7 @@ body {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,.4); z-index: 999;
   align-items: flex-start; justify-content: center; padding: 40px 16px;
-  overflow-y: auto;
+  overflow-y: auto; overscroll-behavior: contain;
 }
 .help-overlay.visible { display: flex; }
 .help-card {
@@ -317,4 +317,21 @@ body {
   font-size: 14px; cursor: pointer;
 }
 .help-close:hover { color: var(--text); }
+
+/* Operator bar for calc fields */
+.calc-bar {
+  display: none; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px; z-index: 1000;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 8px 10px; gap: 8px;
+}
+.calc-bar.visible { display: flex; }
+@media (min-width: 600px) { .calc-bar { max-width: 560px; } }
+.calc-bar-btn {
+  flex: 1; min-height: 44px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 18px; font-weight: 600; cursor: pointer;
+}
+.calc-bar-btn:active { background: var(--border); }
+.calc-bar-confirm { background: var(--green); color: #fff; border-color: var(--green); }
 

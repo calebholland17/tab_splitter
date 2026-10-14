@@ -140,6 +140,17 @@ test('help icon opens and closes the help overlay on the setup page', async ({ p
   await expect(page.locator('#help-overlay')).toBeHidden();
 });
 
+test('help overlay locks background scroll while open', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('body')).toHaveCSS('overflow-y', 'visible');
+
+  await page.click('#help-btn');
+  await expect(page.locator('body')).toHaveCSS('overflow-y', 'hidden');
+
+  await page.click('#help-close');
+  await expect(page.locator('body')).toHaveCSS('overflow-y', 'visible');
+});
+
 test('item price field resolves a typed math expression on blur', async ({ page }) => {
   await page.goto('/');
   await page.click('button:has-text("+ Add Item")');
@@ -152,4 +163,23 @@ test('item price field resolves a typed math expression on blur', async ({ page 
   await row.locator('.setup-item-name').click(); // blur the price field
 
   await expect(priceField).toHaveValue('6.00');
+});
+
+test('operator bar lets you build and resolve a math expression by tapping', async ({ page }) => {
+  await page.goto('/');
+  await page.click('button:has-text("+ Add Item")');
+  const row = page.locator('.setup-item').last();
+  const priceField = row.locator('.setup-item-price');
+
+  await expect(page.locator('#calc-bar')).toBeHidden();
+  await priceField.click();
+  await expect(page.locator('#calc-bar')).toBeVisible();
+
+  await priceField.pressSequentially('24');
+  await page.click('[data-op="/"]');
+  await priceField.pressSequentially('4');
+  await page.click('#calc-bar-confirm');
+
+  await expect(priceField).toHaveValue('6.00');
+  await expect(page.locator('#calc-bar')).toBeHidden();
 });

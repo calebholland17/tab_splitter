@@ -80,12 +80,12 @@ function renderItems() {
       <input class="setup-item-name" value="${esc(item.name)}"
         placeholder="Item name" oninput="updateItem(${i},'name',this.value)">
       <input class="setup-item-qty" type="text" inputmode="numeric" value="${item.qty}"
-        onkeydown="calcKeydown(event)" onfocus="calcFocus(event)" onblur="resolveCalcField(this,{integer:true,min:1})"
+        onkeydown="calcKeydown(event)" onfocus="calcFocus(event,{integer:true,min:1})" onblur="resolveCalcField(this,{integer:true,min:1})"
         oninput="updateItem(${i},'qty',parseFloat(this.value)||0)">
       <button class="setup-item-operator${item.splitMode ? ' split' : ''}" onclick="toggleSplitMode(${i})">${item.splitMode ? '÷' : '×'}</button>
       <input class="setup-item-price" type="text" inputmode="decimal" value="${item.price > 0 ? item.price.toFixed(2) : ''}"
         placeholder="${item.splitMode ? 'Total' : '0.00'}"
-        onkeydown="calcKeydown(event)" onfocus="calcFocus(event)" onblur="resolveCalcField(this,{integer:false,min:0})"
+        onkeydown="calcKeydown(event)" onfocus="calcFocus(event,{integer:false,min:0})" onblur="resolveCalcField(this,{integer:false,min:0})"
         oninput="updateItem(${i},'price',parseFloat(this.value)||0)">
       <span class="setup-item-each">${eachText}</span>
       <button class="btn-remove" onclick="removeItem(${i})">✕</button>
@@ -120,14 +120,28 @@ function calcKeydown(e) {
   e.preventDefault();
 }
 
-function calcFocus(e) {
+let activeCalcField = null;
+let activeCalcOpts = {};
+
+function calcFocus(e, opts = {}) {
   e.target.dataset.prevValue = e.target.value;
   e.target.select();
+  activeCalcField = e.target;
+  activeCalcOpts = opts;
+  document.getElementById('calc-bar').classList.add('visible');
+}
+
+function hideCalcBar() {
+  activeCalcField = null;
+  document.getElementById('calc-bar').classList.remove('visible');
 }
 
 function resolveCalcField(el, { integer = false, min = 0 } = {}) {
   const raw = el.value.trim();
-  if (raw === '') return;
+  if (raw === '') {
+    hideCalcBar();
+    return;
+  }
   const result = evalMathExpr(raw);
   if (result === null) {
     el.value = el.dataset.prevValue || '';
@@ -136,20 +150,64 @@ function resolveCalcField(el, { integer = false, min = 0 } = {}) {
     el.value = integer ? String(Math.round(value)) : value.toFixed(2);
   }
   el.dispatchEvent(new Event('input', { bubbles: true }));
+  hideCalcBar();
 }
+
+function insertAtCursor(el, text) {
+  const start = el.selectionStart ?? el.value.length;
+  const end = el.selectionEnd ?? el.value.length;
+  el.setRangeText(text, start, end, 'end');
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function backspaceAtCursor(el) {
+  const start = el.selectionStart ?? el.value.length;
+  const end = el.selectionEnd ?? el.value.length;
+  if (start === end) {
+    if (start === 0) return;
+    el.setRangeText('', start - 1, start, 'end');
+  } else {
+    el.setRangeText('', start, end, 'end');
+  }
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+document.querySelectorAll('.calc-bar-btn[data-op]').forEach(btn => {
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (activeCalcField) insertAtCursor(activeCalcField, btn.dataset.op);
+  });
+});
+document.getElementById('calc-bar-backspace').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (activeCalcField) backspaceAtCursor(activeCalcField);
+});
+document.getElementById('calc-bar-confirm').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (!activeCalcField) return;
+  const field = activeCalcField;
+  resolveCalcField(field, activeCalcOpts);
+  field.blur();
+});
 
 window.calcKeydown = calcKeydown;
 window.calcFocus = calcFocus;
 window.resolveCalcField = resolveCalcField;
 
-window.openHelp  = () => document.getElementById('help-overlay').classList.add('visible');
-window.closeHelp = () => document.getElementById('help-overlay').classList.remove('visible');
+window.openHelp = () => {
+  document.getElementById('help-overlay').classList.add('visible');
+  document.body.style.overflow = 'hidden';
+};
+window.closeHelp = () => {
+  document.getElementById('help-overlay').classList.remove('visible');
+  document.body.style.overflow = '';
+};
 
 ['charge-surcharge', 'charge-tax', 'charge-gratuity'].forEach(id => {
   const field = document.getElementById(id);
   field.addEventListener('input', () => { recalcTotal(); saveState(); });
   field.addEventListener('keydown', calcKeydown);
-  field.addEventListener('focus', calcFocus);
+  field.addEventListener('focus', (e) => calcFocus(e, { integer: false, min: 0 }));
   field.addEventListener('blur', () => resolveCalcField(field, { integer: false, min: 0 }));
 });
 
