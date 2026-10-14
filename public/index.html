@@ -57,17 +57,17 @@
       <div class="setup-row">
         <div class="setup-field">
           <label class="setup-label">Surcharge ($)</label>
-          <input id="charge-surcharge" class="setup-input calc-field" type="text" inputmode="decimal" value="0">
+          <input id="charge-surcharge" class="setup-input calc-field" type="text" inputmode="none" value="0">
         </div>
         <div class="setup-field">
           <label class="setup-label">Tax ($)</label>
-          <input id="charge-tax" class="setup-input calc-field" type="text" inputmode="decimal" value="0">
+          <input id="charge-tax" class="setup-input calc-field" type="text" inputmode="none" value="0">
         </div>
       </div>
       <div class="setup-row">
         <div class="setup-field">
           <label class="setup-label">Gratuity ($)</label>
-          <input id="charge-gratuity" class="setup-input calc-field" type="text" inputmode="decimal" value="0">
+          <input id="charge-gratuity" class="setup-input calc-field" type="text" inputmode="none" value="0">
         </div>
         <div class="setup-field">
           <label class="setup-label">Total ($)</label>
@@ -107,7 +107,7 @@
       <p>The same toggle also fixes the scanner quirk above — flip it on, treat the quantity as the number of units, and enter the line's total price.</p>
 
       <h3>3. Quick math in any price field</h3>
-      <p>You can type a calculation directly into any item or fee price field — e.g. type <code>24/4</code> and tab or click away, and it resolves to <code>6.00</code>. Handy for fixing a scanner mistake without doing the division yourself. A row of <strong>+ − × ÷</strong> buttons appears above your keyboard while you're in one of these fields, since phone keypads don't normally have them.</p>
+      <p>Tapping into any item or fee price field brings up a built-in calculator keypad with <strong>+ − × ÷</strong> included — type <code>24/4</code> and tap <strong>Done</strong>, and it resolves to <code>6.00</code>. Handy for fixing a scanner mistake without doing the division yourself.</p>
 
       <h3>4. Double-check the total</h3>
       <p>If you entered a receipt total during scanning, a warning appears if your item/fee totals don't match it — that's usually a sign something above still needs fixing.</p>
@@ -115,12 +115,25 @@
   </div>
 
   <div class="calc-bar" id="calc-bar">
-    <button type="button" class="calc-bar-btn" data-op="+">+</button>
-    <button type="button" class="calc-bar-btn" data-op="-">−</button>
-    <button type="button" class="calc-bar-btn" data-op="*">×</button>
-    <button type="button" class="calc-bar-btn" data-op="/">÷</button>
-    <button type="button" class="calc-bar-btn" id="calc-bar-backspace" aria-label="Backspace">⌫</button>
-    <button type="button" class="calc-bar-btn calc-bar-confirm" id="calc-bar-confirm" aria-label="Confirm">✓</button>
+    <div class="calc-bar-grid">
+      <button type="button" class="calc-bar-btn" data-insert="1">1</button>
+      <button type="button" class="calc-bar-btn" data-insert="2">2</button>
+      <button type="button" class="calc-bar-btn" data-insert="3">3</button>
+      <button type="button" class="calc-bar-btn calc-op" data-insert="/">÷</button>
+      <button type="button" class="calc-bar-btn" data-insert="4">4</button>
+      <button type="button" class="calc-bar-btn" data-insert="5">5</button>
+      <button type="button" class="calc-bar-btn" data-insert="6">6</button>
+      <button type="button" class="calc-bar-btn calc-op" data-insert="*">×</button>
+      <button type="button" class="calc-bar-btn" data-insert="7">7</button>
+      <button type="button" class="calc-bar-btn" data-insert="8">8</button>
+      <button type="button" class="calc-bar-btn" data-insert="9">9</button>
+      <button type="button" class="calc-bar-btn calc-op" data-insert="-">−</button>
+      <button type="button" class="calc-bar-btn" data-insert=".">.</button>
+      <button type="button" class="calc-bar-btn" data-insert="0">0</button>
+      <button type="button" class="calc-bar-btn" id="calc-bar-backspace" aria-label="Backspace">⌫</button>
+      <button type="button" class="calc-bar-btn calc-op" data-insert="+">+</button>
+    </div>
+    <button type="button" class="calc-bar-confirm" id="calc-bar-confirm">Done</button>
   </div>
 
   <script src="/js/calc.js"></script>

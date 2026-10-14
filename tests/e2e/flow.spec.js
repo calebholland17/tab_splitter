@@ -165,7 +165,7 @@ test('item price field resolves a typed math expression on blur', async ({ page 
   await expect(priceField).toHaveValue('6.00');
 });
 
-test('operator bar lets you build and resolve a math expression by tapping', async ({ page }) => {
+test('calculator keypad lets you build and resolve a math expression by tapping', async ({ page }) => {
   await page.goto('/');
   await page.click('button:has-text("+ Add Item")');
   const row = page.locator('.setup-item').last();
@@ -175,38 +175,20 @@ test('operator bar lets you build and resolve a math expression by tapping', asy
   await priceField.click();
   await expect(page.locator('#calc-bar')).toBeVisible();
 
-  await priceField.pressSequentially('24');
-  await page.click('[data-op="/"]');
-  await priceField.pressSequentially('4');
+  await page.click('[data-insert="2"]');
+  await page.click('[data-insert="4"]');
+  await page.click('[data-insert="/"]');
+  await page.click('[data-insert="4"]');
   await page.click('#calc-bar-confirm');
 
   await expect(priceField).toHaveValue('6.00');
   await expect(page.locator('#calc-bar')).toBeHidden();
 });
 
-test('operator bar repositions above a simulated on-screen keyboard', async ({ page }) => {
-  await page.addInitScript(() => {
-    class FakeVisualViewport extends EventTarget {
-      constructor() {
-        super();
-        this.height = window.innerHeight;
-        this.offsetTop = 0;
-      }
-    }
-    window.visualViewport = new FakeVisualViewport();
-  });
-
+test('item price field never shows the native on-screen keyboard', async ({ page }) => {
   await page.goto('/');
   await page.click('button:has-text("+ Add Item")');
   const row = page.locator('.setup-item').last();
-  await row.locator('.setup-item-price').click();
-  await expect(page.locator('#calc-bar')).toBeVisible();
-
-  // Simulate a 300px on-screen keyboard eating the bottom of the viewport
-  await page.evaluate(() => {
-    window.visualViewport.height = window.innerHeight - 300;
-    window.visualViewport.dispatchEvent(new Event('resize'));
-  });
-
-  await expect(page.locator('#calc-bar')).toHaveCSS('bottom', '300px');
+  await expect(row.locator('.setup-item-price')).toHaveAttribute('inputmode', 'none');
+  await expect(row.locator('.setup-item-qty')).toHaveAttribute('inputmode', 'none');
 });

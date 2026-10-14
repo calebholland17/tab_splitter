@@ -318,20 +318,28 @@ body {
 }
 .help-close:hover { color: var(--text); }
 
-/* Operator bar for calc fields */
+/* Calculator keypad for calc fields — replaces the native on-screen keyboard */
 .calc-bar {
   display: none; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
   width: 100%; max-width: 480px; z-index: 1000;
   background: var(--surface); border-top: 1px solid var(--border);
-  padding: 8px 10px; gap: 8px;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
 }
-.calc-bar.visible { display: flex; }
+.calc-bar.visible { display: block; }
 @media (min-width: 600px) { .calc-bar { max-width: 560px; } }
+.calc-bar-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+}
 .calc-bar-btn {
-  flex: 1; min-height: 44px; border-radius: 8px;
+  min-height: 48px; border-radius: 8px;
   background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); font-size: 18px; font-weight: 600; cursor: pointer;
+  color: var(--text); font-size: 20px; font-weight: 600; cursor: pointer;
 }
 .calc-bar-btn:active { background: var(--border); }
-.calc-bar-confirm { background: var(--green); color: #fff; border-color: var(--green); }
+.calc-bar-btn.calc-op { color: var(--accent); }
+.calc-bar-confirm {
+  display: block; width: 100%; margin-top: 8px; min-height: 44px;
+  background: var(--green); color: #fff; border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
 

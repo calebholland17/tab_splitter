@@ -79,11 +79,11 @@ function renderItems() {
     <div class="setup-item">
       <input class="setup-item-name" value="${esc(item.name)}"
         placeholder="Item name" oninput="updateItem(${i},'name',this.value)">
-      <input class="setup-item-qty" type="text" inputmode="numeric" value="${item.qty}"
+      <input class="setup-item-qty" type="text" inputmode="none" value="${item.qty}"
         onkeydown="calcKeydown(event)" onfocus="calcFocus(event,{integer:true,min:1})" onblur="resolveCalcField(this,{integer:true,min:1})"
         oninput="updateItem(${i},'qty',parseFloat(this.value)||0)">
       <button class="setup-item-operator${item.splitMode ? ' split' : ''}" onclick="toggleSplitMode(${i})">${item.splitMode ? '÷' : '×'}</button>
-      <input class="setup-item-price" type="text" inputmode="decimal" value="${item.price > 0 ? item.price.toFixed(2) : ''}"
+      <input class="setup-item-price" type="text" inputmode="none" value="${item.price > 0 ? item.price.toFixed(2) : ''}"
         placeholder="${item.splitMode ? 'Total' : '0.00'}"
         onkeydown="calcKeydown(event)" onfocus="calcFocus(event,{integer:false,min:0})" onblur="resolveCalcField(this,{integer:false,min:0})"
         oninput="updateItem(${i},'price',parseFloat(this.value)||0)">
@@ -123,31 +123,17 @@ function calcKeydown(e) {
 let activeCalcField = null;
 let activeCalcOpts = {};
 
-function positionCalcBar() {
-  if (!window.visualViewport) return;
-  const vv = window.visualViewport;
-  const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
-  document.getElementById('calc-bar').style.bottom = Math.max(0, keyboardHeight) + 'px';
-}
-
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', positionCalcBar);
-  window.visualViewport.addEventListener('scroll', positionCalcBar);
-}
-
 function calcFocus(e, opts = {}) {
   e.target.dataset.prevValue = e.target.value;
   e.target.select();
   activeCalcField = e.target;
   activeCalcOpts = opts;
   document.getElementById('calc-bar').classList.add('visible');
-  positionCalcBar();
 }
 
 function hideCalcBar() {
   activeCalcField = null;
   document.getElementById('calc-bar').classList.remove('visible');
-  document.getElementById('calc-bar').style.bottom = '';
 }
 
 function resolveCalcField(el, { integer = false, min = 0 } = {}) {
@@ -186,10 +172,10 @@ function backspaceAtCursor(el) {
   el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-document.querySelectorAll('.calc-bar-btn[data-op]').forEach(btn => {
+document.querySelectorAll('.calc-bar-btn[data-insert]').forEach(btn => {
   btn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (activeCalcField) insertAtCursor(activeCalcField, btn.dataset.op);
+    if (activeCalcField) insertAtCursor(activeCalcField, btn.dataset.insert);
   });
 });
 document.getElementById('calc-bar-backspace').addEventListener('pointerdown', (e) => {
