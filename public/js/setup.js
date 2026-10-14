@@ -123,17 +123,31 @@ function calcKeydown(e) {
 let activeCalcField = null;
 let activeCalcOpts = {};
 
+function positionCalcBar() {
+  if (!window.visualViewport) return;
+  const vv = window.visualViewport;
+  const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+  document.getElementById('calc-bar').style.bottom = Math.max(0, keyboardHeight) + 'px';
+}
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', positionCalcBar);
+  window.visualViewport.addEventListener('scroll', positionCalcBar);
+}
+
 function calcFocus(e, opts = {}) {
   e.target.dataset.prevValue = e.target.value;
   e.target.select();
   activeCalcField = e.target;
   activeCalcOpts = opts;
   document.getElementById('calc-bar').classList.add('visible');
+  positionCalcBar();
 }
 
 function hideCalcBar() {
   activeCalcField = null;
   document.getElementById('calc-bar').classList.remove('visible');
+  document.getElementById('calc-bar').style.bottom = '';
 }
 
 function resolveCalcField(el, { integer = false, min = 0 } = {}) {

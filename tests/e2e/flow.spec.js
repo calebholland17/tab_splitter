@@ -183,3 +183,30 @@ test('operator bar lets you build and resolve a math expression by tapping', asy
   await expect(priceField).toHaveValue('6.00');
   await expect(page.locator('#calc-bar')).toBeHidden();
 });
+
+test('operator bar repositions above a simulated on-screen keyboard', async ({ page }) => {
+  await page.addInitScript(() => {
+    class FakeVisualViewport extends EventTarget {
+      constructor() {
+        super();
+        this.height = window.innerHeight;
+        this.offsetTop = 0;
+      }
+    }
+    window.visualViewport = new FakeVisualViewport();
+  });
+
+  await page.goto('/');
+  await page.click('button:has-text("+ Add Item")');
+  const row = page.locator('.setup-item').last();
+  await row.locator('.setup-item-price').click();
+  await expect(page.locator('#calc-bar')).toBeVisible();
+
+  // Simulate a 300px on-screen keyboard eating the bottom of the viewport
+  await page.evaluate(() => {
+    window.visualViewport.height = window.innerHeight - 300;
+    window.visualViewport.dispatchEvent(new Event('resize'));
+  });
+
+  await expect(page.locator('#calc-bar')).toHaveCSS('bottom', '300px');
+});
