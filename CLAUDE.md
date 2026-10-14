@@ -13,7 +13,7 @@ npm start            # Production start
 
 Run a single Jest test file:
 ```bash
-DB_PATH=:memory: NODE_ENV=test npx jest tests/unit/sometest.test.js --forceExit
+DB_PATH=:memory: NODE_ENV=test npx jest tests/db.test.js --forceExit
 ```
 
 Run a single Playwright test by title:
@@ -21,9 +21,9 @@ Run a single Playwright test by title:
 npx playwright test --grep "test title here"
 ```
 
-E2E tests against the deployed Railway app:
+E2E tests against the deployed app:
 ```bash
-BASE_URL=https://tabsplitter-production.up.railway.app npx playwright test
+BASE_URL=https://splityourtab.com npx playwright test
 ```
 
 **Required env var:** `ANTHROPIC_API_KEY` must be set for receipt scanning (`/api/receipt/parse`). All other features work without it.
@@ -40,13 +40,13 @@ Three-page app: **setup** (`/`) → **host monitor** (`/host/:tabId`) → **gues
 - Guest `owed` amount is calculated as `guestSubtotal × (total / subtotal)` — a proportional share of fees/tip, not a fixed split.
 
 **Frontend** — vanilla JS, no build step, no framework:
-- `public/js/setup.js` — form state persisted to `localStorage` under key `tabsplitter_draft`; cleared on successful tab creation. Reads back on page load so refreshes don't wipe the form.
+- `public/js/setup.js` — form state persisted to `localStorage` under key `tabsplitter_draft`; cleared on successful tab creation. Reads back on page load so refreshes don't wipe the form. Each item has a "split mode" toggle (`÷` vs `×`): in split mode the entered price is the *total* for the group and gets divided by `qty` client-side before the item is sent to `/api/tabs` — the server only ever stores a single already-divided per-item price (see `db.js` schema, which has no split/group concept).
 - `public/js/tab.js` — guest identity persisted in `sessionStorage` (key `tab_identity_<tabId>`); resets on back-navigation via `pageshow` event. Live state polled every 2s from `/api/tabs/:tabId`.
 - `public/js/host.js` — host-only "Mark Paid" confirmation per guest; polls every 2s. Guests cannot self-report payment.
 - `public/css/app.css` — single stylesheet, light-mode only, uses CSS custom properties defined on `:root`.
 
 **Payment flow:** Guest selects items → taps Venmo link (deep link on mobile, web URL on desktop) → host receives Venmo notification → host taps "Mark Paid" on host page. There is no Venmo API integration; confirmation is manual.
 
-**Receipt scanning:** POST to `/api/receipt/parse` sends image to `claude-haiku-4-5` which returns structured JSON. The prompt handles unit-price vs. line-total ambiguity and populates both items and charges (tax/surcharge/gratuity).
+**Receipt scanning:** POST to `/api/receipt/parse` sends image to `claude-haiku-4-5-20251001` which returns structured JSON. The prompt handles unit-price vs. line-total ambiguity and populates both items and charges (tax/surcharge/gratuity).
 
-**Deployment:** Railway, auto-deploys on push to `main`. Set `DB_PATH` and `ANTHROPIC_API_KEY` as Railway environment variables.
+**Deployment:** Fly.io (`fly.toml` + two-stage `Dockerfile`), auto-deploys via GitHub Actions (`.github/workflows/deploy.yml`) on push to `main` — the workflow runs `npm test` before `flyctl deploy`. SQLite lives on a persistent Fly volume mounted at `/data` (`DB_PATH=/data/tabsplitter.db`, set in `fly.toml`). Live at https://splityourtab.com.
