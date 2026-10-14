@@ -8,6 +8,7 @@ function esc(s) {
 }
 
 let items = [];
+let receiptTotal = null;
 
 const DRAFT_KEY = 'tabsplitter_draft';
 
@@ -15,6 +16,7 @@ function saveState() {
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
       items,
+      receiptTotal,
       tabName:       document.getElementById('tab-name').value,
       paymentHandle: document.getElementById('payment-handle').value,
       surcharge:     document.getElementById('charge-surcharge').value,
@@ -31,6 +33,7 @@ function loadState() {
     if (!raw) return;
     const s = JSON.parse(raw);
     if (Array.isArray(s.items))       items = s.items.map(i => ({ ...i, splitMode: !!i.splitMode }));
+    if (s.receiptTotal != null)       receiptTotal = Number(s.receiptTotal);
     if (s.tabName)                    document.getElementById('tab-name').value = s.tabName;
     if (s.paymentHandle)              document.getElementById('payment-handle').value = s.paymentHandle;
     if (s.surcharge != null)          document.getElementById('charge-surcharge').value = s.surcharge;
@@ -44,6 +47,7 @@ window.clearDraft = function () {
   if (!confirm('Start over? This will clear all items and details.')) return;
   localStorage.removeItem(DRAFT_KEY);
   items = [];
+  receiptTotal = null;
   document.getElementById('tab-name').value = '';
   document.getElementById('payment-handle').value = '';
   document.getElementById('charge-surcharge').value = '0';
@@ -55,6 +59,20 @@ window.clearDraft = function () {
   renderItems();
 };
 
+function updateTotalCheck() {
+  if (receiptTotal == null) return;
+  const status = document.getElementById('parse-status');
+  const ourTotal = parseFloat(document.getElementById('charge-total').value) || 0;
+  const diff = Math.abs(ourTotal - receiptTotal);
+  if (diff < 0.02) {
+    status.textContent = `Total matches receipt ($${ourTotal.toFixed(2)}) ✓`;
+    status.className = 'parse-status success';
+  } else {
+    status.textContent = `Total mismatch: we got $${ourTotal.toFixed(2)}, receipt shows $${receiptTotal.toFixed(2)} — check items/charges`;
+    status.className = 'parse-status warning';
+  }
+}
+
 function recalcTotal() {
   const subtotal = items.reduce((s, item) => s + (item.splitMode ? item.price : item.price * item.qty), 0);
   const surcharge = parseFloat(document.getElementById('charge-surcharge').value) || 0;
@@ -62,6 +80,7 @@ function recalcTotal() {
   const gratuity  = parseFloat(document.getElementById('charge-gratuity').value) || 0;
   document.getElementById('charge-total').value =
     (Math.round((subtotal + surcharge + tax + gratuity) * 100) / 100).toFixed(2);
+  updateTotalCheck();
 }
 
 function renderItems() {
@@ -242,24 +261,18 @@ async function handleReceiptFile(file) {
       document.getElementById('charge-gratuity').value  = Number(data.charges.gratuity  || 0).toFixed(2);
     }
 
-    renderItems(); // also calls recalcTotal()
+    receiptTotal = data.receiptTotal != null ? Number(data.receiptTotal) : null;
+
+    renderItems(); // also calls recalcTotal() -> updateTotalCheck()
     saveState();
 
-    let msg = `✓ Found ${items.length} item type${items.length === 1 ? '' : 's'}`;
-    if (data.receiptTotal) {
-      const ourTotal = parseFloat(document.getElementById('charge-total').value);
-      const diff = Math.abs(ourTotal - data.receiptTotal);
-      if (diff < 0.02) {
-        msg += ` · Total matches receipt ($${ourTotal.toFixed(2)}) ✓`;
-        status.className = 'parse-status success';
-      } else {
-        msg += ` · Total mismatch: we got $${ourTotal.toFixed(2)}, receipt shows $${data.receiptTotal.toFixed(2)} — check items/charges`;
-        status.className = 'parse-status warning';
-      }
+    const foundMsg = `✓ Found ${items.length} item type${items.length === 1 ? '' : 's'}`;
+    if (receiptTotal != null) {
+      status.textContent = `${foundMsg} · ${status.textContent}`;
     } else {
+      status.textContent = foundMsg;
       status.className = 'parse-status success';
     }
-    status.textContent = msg;
   } catch (err) {
     status.textContent = `Scan failed: ${err.message}. Add items manually below.`;
     status.className = 'parse-status error';

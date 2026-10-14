@@ -192,3 +192,36 @@ test('item price field never shows the native on-screen keyboard', async ({ page
   await expect(row.locator('.setup-item-price')).toHaveAttribute('inputmode', 'none');
   await expect(row.locator('.setup-item-qty')).toHaveAttribute('inputmode', 'none');
 });
+
+test('receipt total mismatch warning updates live and turns green once prices are fixed', async ({ page }) => {
+  await page.route('**/api/receipt/parse', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      items: [{ name: 'Nachos', price: 20, qty: 1 }],
+      charges: { surcharge: 0, tax: 0, gratuity: 0 },
+      receiptTotal: 24,
+    }),
+  }));
+
+  await page.goto('/');
+  await page.setInputFiles('#receipt-library', {
+    name: 'receipt.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('fake-image-data'),
+  });
+
+  const status = page.locator('#parse-status');
+  await expect(status).toHaveClass(/warning/);
+  await expect(status).toContainText('mismatch');
+
+  const priceField = page.locator('.setup-item').first().locator('.setup-item-price');
+  await priceField.click(); // selects the current value
+  await page.click('#calc-bar-backspace'); // clears the selection
+  await page.click('[data-insert="2"]');
+  await page.click('[data-insert="4"]');
+  await page.click('#calc-bar-confirm');
+
+  await expect(status).toHaveClass(/success/);
+  await expect(status).toContainText('matches');
+});
