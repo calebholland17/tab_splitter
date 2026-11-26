@@ -158,3 +158,44 @@ describe('markPaid and isSettled', () => {
     expect(view2.status).toBe('settled');
   });
 });
+
+describe('events', () => {
+  it('logs events and counts them by type', () => {
+    store.logEvent('tip_click', { tabId: 'abc123', meta: { amount: 1 } }, 1000);
+    store.logEvent('tip_click', {}, 2000);
+    store.logEvent('tab_created', {}, 2000);
+    expect(store.countEvents('tip_click')).toBe(2);
+    expect(store.countEvents('tab_created')).toBe(1);
+    expect(store.countEvents('guest_paid')).toBe(0);
+  });
+
+  it('counts only events at or after `since`', () => {
+    store.logEvent('receipt_scan', { meta: { ok: true } }, 1000);
+    store.logEvent('receipt_scan', { meta: { ok: true } }, 5000);
+    expect(store.countEvents('receipt_scan', { since: 5000 })).toBe(1);
+    expect(store.countEvents('receipt_scan', { since: 5001 })).toBe(0);
+  });
+
+  it('filters by ipHash', () => {
+    store.logEvent('receipt_scan', { ipHash: 'aaaa', meta: { ok: true } }, 1000);
+    store.logEvent('receipt_scan', { ipHash: 'bbbb', meta: { ok: true } }, 1000);
+    expect(store.countEvents('receipt_scan', { ipHash: 'aaaa' })).toBe(1);
+  });
+
+  it('okOnly counts only successful scans', () => {
+    store.logEvent('receipt_scan', { meta: { ok: true } }, 1000);
+    store.logEvent('receipt_scan', { meta: { ok: false } }, 1000);
+    store.logEvent('receipt_scan', {}, 1000);
+    expect(store.countEvents('receipt_scan', { okOnly: true })).toBe(1);
+    expect(store.countEvents('receipt_scan')).toBe(3);
+  });
+
+  it('listEvents returns parsed meta, newest first', () => {
+    store.logEvent('tip_click', { tabId: 't1', ipHash: 'h1', meta: { amount: 2 } }, 1000);
+    store.logEvent('tip_click', { tabId: 't2' }, 2000);
+    expect(store.listEvents('tip_click')).toEqual([
+      { type: 'tip_click', tabId: 't2', ipHash: null, meta: null, createdAt: 2000 },
+      { type: 'tip_click', tabId: 't1', ipHash: 'h1', meta: { amount: 2 }, createdAt: 1000 },
+    ]);
+  });
+});

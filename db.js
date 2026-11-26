@@ -25,6 +25,16 @@ const SCHEMA = `
     price REAL NOT NULL,
     claimed_by TEXT REFERENCES guests(id)
   );
+  CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    tab_id TEXT,
+    ip_hash TEXT,
+    meta TEXT,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_events_type_time ON events(type, created_at);
+  CREATE INDEX IF NOT EXISTS idx_events_ip_time   ON events(ip_hash, created_at);
 `;
 
 function shortId() { return randomBytes(3).toString('hex'); }
@@ -114,7 +124,30 @@ function makeStore(db) {
     return true;
   }
 
-  return { createTab, getTabView, claimItem, unclaimItem, markPaid, isSettled };
+  function logEvent(type, { tabId = null, ipHash = null, meta = null } = {}, now = Date.now()) {
+    db.prepare('INSERT INTO events (type, tab_id, ip_hash, meta, created_at) VALUES (?, ?, ?, ?, ?)')
+      .run(type, tabId, ipHash, meta == null ? null : JSON.stringify(meta), now);
+  }
+
+  function countEvents(type, { since = 0, ipHash = null, okOnly = false } = {}) {
+    let sql = 'SELECT COUNT(*) AS n FROM events WHERE type = ? AND created_at >= ?';
+    const args = [type, since];
+    if (ipHash) { sql += ' AND ip_hash = ?'; args.push(ipHash); }
+    if (okOnly) sql += " AND json_extract(meta, '$.ok') = 1";
+    return db.prepare(sql).get(...args).n;
+  }
+
+  function listEvents(type) {
+    return db.prepare('SELECT * FROM events WHERE type = ? ORDER BY id DESC').all(type).map(e => ({
+      type: e.type,
+      tabId: e.tab_id,
+      ipHash: e.ip_hash,
+      meta: e.meta ? JSON.parse(e.meta) : null,
+      createdAt: e.created_at,
+    }));
+  }
+
+  return { createTab, getTabView, claimItem, unclaimItem, markPaid, isSettled, logEvent, countEvents, listEvents };
 }
 
 const productionDb = buildDb(process.env.DB_PATH || path.join(__dirname, 'tabsplitter.db'));
