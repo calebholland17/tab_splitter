@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>TabSplitter — Stats</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="admin">
+    <div class="admin-head">
+      <h1>TabSplitter stats</h1>
+      <button class="btn btn-outline" id="refresh-btn" onclick="loadStats()">Refresh</button>
+    </div>
+    <div class="admin-meta" id="admin-meta"></div>
+    <div class="admin-message" id="admin-message" hidden></div>
+    <div class="admin-grid" id="admin-grid" hidden>
+      <section class="admin-card admin-card-wide"><h2>Growth</h2><div id="growth"></div></section>
+      <section class="admin-card"><h2>Engagement</h2><div id="engagement"></div></section>
+      <section class="admin-card"><h2>Cost &amp; overuse</h2><div id="cost"></div></section>
+      <section class="admin-card"><h2>Tips</h2><div id="tips"></div></section>
+    </div>
+  </div>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

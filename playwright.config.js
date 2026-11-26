@@ -18,6 +18,8 @@ module.exports = defineConfig({
         PORT: '3001',
         DB_PATH: ':memory:',
         ANTHROPIC_API_KEY: 'test-key',
+        ADMIN_TOKEN: 'e2e-admin-token',
+        TIP_VENMO_HANDLE: 'Caleb-Holland-3',
       },
     },
   }),

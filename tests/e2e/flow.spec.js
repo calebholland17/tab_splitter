@@ -258,3 +258,24 @@ test('manually entered tab reports scanned: false', async ({ page }) => {
   ]);
   expect(req.postDataJSON().scanned).toBe(false);
 });
+
+test.describe('admin dashboard', () => {
+  test.skip(!!process.env.BASE_URL, 'needs the local test server env');
+
+  test('signs in via ?key=, strips it from the URL, and renders stats', async ({ page }) => {
+    await createTab(page);
+    await page.goto('/admin?key=e2e-admin-token');
+    await expect(page.locator('#admin-grid')).toBeVisible();
+    await expect(page.locator('#growth')).toContainText('Tabs · 7d');
+    await expect(page.locator('#cost')).toContainText('/ 500');
+    expect(page.url()).not.toContain('key=');
+    await page.reload(); // remembered key
+    await expect(page.locator('#admin-grid')).toBeVisible();
+  });
+
+  test('shows a message and hides stats for a wrong key', async ({ page }) => {
+    await page.goto('/admin?key=wrong');
+    await expect(page.locator('#admin-message')).toContainText('not accepted');
+    await expect(page.locator('#admin-grid')).toBeHidden();
+  });
+});

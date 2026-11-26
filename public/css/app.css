@@ -343,3 +343,47 @@ body {
   font-size: 15px; font-weight: 700; cursor: pointer;
 }
 
+
+/* Admin dashboard */
+.admin { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+.admin-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.admin-head h1 { font-size: 20px; }
+.admin-meta { color: var(--muted); font-size: 12px; margin: 4px 0 16px; }
+.admin-message {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; color: var(--muted);
+}
+.admin-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.admin-grid[hidden], .admin-message[hidden] { display: none; }
+@media (min-width: 760px) {
+  .admin-grid { grid-template-columns: 1fr 1fr; }
+  .admin-card-wide { grid-column: 1 / -1; }
+}
+.admin-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; min-width: 0;
+}
+.admin-card h2 {
+  font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 12px;
+}
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.stat-label { font-size: 12px; color: var(--muted); }
+.stat-value { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-sub, .admin-note, .delta { font-size: 12px; color: var(--muted); }
+.admin-note { margin-top: 12px; }
+.admin-subhead { font-size: 12px; font-weight: 600; margin: 16px 0 6px; }
+.delta.up { color: var(--green); }
+.delta.down { color: #b45309; }
+.meter-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.meter { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; margin-bottom: 16px; }
+.meter-fill { height: 100%; background: var(--green); }
+.meter-fill.hot { background: #b45309; }
+.ip-list { list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.ip-list li { display: flex; justify-content: space-between; }
+.chart { margin-top: 16px; }
+.chart figcaption { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart rect { fill: var(--green); }
+.chart .axis { stroke: var(--border); }
+.chart .tick { font-size: 9px; fill: var(--muted); }

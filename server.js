@@ -70,6 +70,7 @@ function scanBlockReason(ipHash, now = Date.now()) {
 app.get('/',            (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
 app.get('/host/:tabId', (req, res) => res.sendFile(path.join(__dirname, 'public/host.html')));
 app.get('/tab/:tabId',  (req, res) => res.sendFile(path.join(__dirname, 'public/tab.html')));
+app.get('/admin',       (req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
 
 // Receipt parsing
 app.post('/api/receipt/parse', (req, res, next) => {
@@ -173,6 +174,26 @@ app.post('/api/tabs/:tabId/paid', (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// Admin dashboard (off unless ADMIN_TOKEN is set)
+function isAdmin(req, res) {
+  const token = process.env.ADMIN_TOKEN;
+  if (!token) { res.status(404).json({ error: 'Not found' }); return false; }
+  const given = Buffer.from((req.get('Authorization') || '').replace(/^Bearer /, ''));
+  const expected = Buffer.from(token);
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return false;
+  }
+  return true;
+}
+
+app.get('/api/admin/stats', (req, res) => {
+  if (!isAdmin(req, res)) return;
+  const stats = store.getStats(Date.now());
+  stats.cost.scanCap = scanLimits().perDay;
+  res.json(stats);
 });
 
 const PORT = process.env.PORT || 3000;

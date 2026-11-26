@@ -171,3 +171,33 @@ describe('scan limits', () => {
     expect(store.listEvents('scan_blocked')[0].meta).toEqual({ reason: 'disabled' });
   });
 });
+describe('admin stats', () => {
+  it('returns 404 when ADMIN_TOKEN is not configured', async () => {
+    const res = await request(app).get('/api/admin/stats').set('Authorization', 'Bearer anything');
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 401 without a key, with a wrong key, and with a key of a different length', async () => {
+    process.env.ADMIN_TOKEN = 'secret-token-123';
+    expect((await request(app).get('/api/admin/stats')).status).toBe(401);
+    expect((await request(app).get('/api/admin/stats').set('Authorization', 'Bearer secret-token-124')).status).toBe(401);
+    expect((await request(app).get('/api/admin/stats').set('Authorization', 'Bearer x')).status).toBe(401);
+  });
+
+  it('returns stats with the configured scan cap for the right key', async () => {
+    process.env.ADMIN_TOKEN = 'secret-token-123';
+    process.env.SCAN_LIMIT_PER_DAY = '250';
+    await request(app).post('/api/tabs').send(TAB_BODY);
+    const res = await request(app).get('/api/admin/stats').set('Authorization', 'Bearer secret-token-123');
+    expect(res.status).toBe(200);
+    expect(res.body.growth.tabs.allTime).toBe(1);
+    expect(res.body.growth.weekly).toHaveLength(12);
+    expect(res.body.cost.scanCap).toBe(250);
+  });
+
+  it('serves the dashboard page at /admin', async () => {
+    const res = await request(app).get('/admin');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('id="growth"');
+  });
+});
