@@ -9,6 +9,7 @@ const {
 const { createHash, timingSafeEqual } = require('crypto');
 // Module object (not destructured) so new event/stats calls can be spied on in tests.
 const store = require('./db');
+const { startOfUtcDay } = require('./stats');
 
 const app    = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -35,13 +36,48 @@ function scanMeta(ok, usage, extra = {}) {
   return { ok, items: 0, inTok: usage?.input_tokens || 0, outTok: usage?.output_tokens || 0, ...extra };
 }
 
+// Receipt-scan limits. Counted from the events table (not memory) because the
+// Fly machine auto-stops when idle, which would reset in-memory counters.
+const HOUR = 60 * 60 * 1000;
+const SCAN_BLOCKED_MESSAGES = {
+  ip_hour:   "You've scanned a lot of receipts recently — try again in a bit, or enter items manually.",
+  daily_cap: 'Receipt scanning is taking a break right now — you can still enter items manually.',
+  disabled:  'Receipt scanning is taking a break right now — you can still enter items manually.',
+};
+
+function positiveIntEnv(name, fallback) {
+  const n = parseInt(process.env[name], 10);
+  return n > 0 ? n : fallback;
+}
+
+function scanLimits() {
+  return { perHour: positiveIntEnv('SCAN_LIMIT_PER_HOUR', 10), perDay: positiveIntEnv('SCAN_LIMIT_PER_DAY', 500) };
+}
+
+function scanBlockReason(ipHash, now = Date.now()) {
+  if (process.env.SCANS_DISABLED === '1') return 'disabled';
+  const { perHour, perDay } = scanLimits();
+  try {
+    if (store.countEvents('receipt_scan', { since: now - HOUR, ipHash, okOnly: true }) >= perHour) return 'ip_hour';
+    if (store.countEvents('receipt_scan', { since: startOfUtcDay(now), okOnly: true }) >= perDay) return 'daily_cap';
+  } catch (err) {
+    console.error('[limits] check failed, allowing scan:', err.message);
+  }
+  return null;
+}
+
 // Pages
 app.get('/',            (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
 app.get('/host/:tabId', (req, res) => res.sendFile(path.join(__dirname, 'public/host.html')));
 app.get('/tab/:tabId',  (req, res) => res.sendFile(path.join(__dirname, 'public/tab.html')));
 
 // Receipt parsing
-app.post('/api/receipt/parse', async (req, res) => {
+app.post('/api/receipt/parse', (req, res, next) => {
+  const reason = scanBlockReason(ipHashOf(req));
+  if (!reason) return next();
+  track('scan_blocked', req, { meta: { reason } });
+  res.status(429).json({ error: SCAN_BLOCKED_MESSAGES[reason] });
+}, async (req, res) => {
   upload.single('image')(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });

@@ -107,3 +107,67 @@ describe('event logging', () => {
     expect(second.ipHash).not.toBe(first.ipHash);
   });
 });
+describe('scan limits', () => {
+  it('blocks the 11th successful scan from one IP within an hour', async () => {
+    for (let i = 0; i < 10; i++) expect((await scan('2.2.2.2')).status).toBe(200);
+    const res = await scan('2.2.2.2');
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe("You've scanned a lot of receipts recently — try again in a bit, or enter items manually.");
+    expect(mockCreate).toHaveBeenCalledTimes(10);
+    expect(store.listEvents('scan_blocked')[0].meta).toEqual({ reason: 'ip_hour' });
+  });
+
+  it('does not block a different IP', async () => {
+    process.env.SCAN_LIMIT_PER_HOUR = '1';
+    await scan('3.3.3.3');
+    expect((await scan('4.4.4.4')).status).toBe(200);
+  });
+
+  it('honors SCAN_LIMIT_PER_HOUR', async () => {
+    process.env.SCAN_LIMIT_PER_HOUR = '2';
+    await scan(); await scan();
+    expect((await scan()).status).toBe(429);
+  });
+
+  it('falls back to the default when SCAN_LIMIT_PER_HOUR is not a positive number', async () => {
+    process.env.SCAN_LIMIT_PER_HOUR = 'abc';
+    for (let i = 0; i < 10; i++) await scan();
+    expect((await scan()).status).toBe(429);
+    expect(mockCreate).toHaveBeenCalledTimes(10);
+  });
+
+  it('does not count failed scans toward the limit', async () => {
+    process.env.SCAN_LIMIT_PER_HOUR = '2';
+    mockCreate.mockRejectedValue(new Error('blurry'));
+    for (let i = 0; i < 3; i++) expect((await scan()).status).toBe(400);
+    mockCreate.mockResolvedValue(SCAN_OK);
+    expect((await scan()).status).toBe(200);
+  });
+
+  it('ignores scans older than an hour', async () => {
+    process.env.SCAN_LIMIT_PER_HOUR = '2';
+    await scan('6.6.6.6');
+    const { ipHash } = store.listEvents('receipt_scan')[0];
+    for (let i = 0; i < 5; i++) {
+      store.logEvent('receipt_scan', { ipHash, meta: { ok: true } }, Date.now() - 61 * 60 * 1000);
+    }
+    expect((await scan('6.6.6.6')).status).toBe(200);
+  });
+
+  it('enforces the global daily cap across IPs', async () => {
+    process.env.SCAN_LIMIT_PER_DAY = '2';
+    await scan('7.0.0.1'); await scan('7.0.0.2');
+    const res = await scan('7.0.0.3');
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe('Receipt scanning is taking a break right now — you can still enter items manually.');
+    expect(store.listEvents('scan_blocked')[0].meta).toEqual({ reason: 'daily_cap' });
+  });
+
+  it('SCANS_DISABLED=1 blocks every scan without calling the API', async () => {
+    process.env.SCANS_DISABLED = '1';
+    const res = await scan();
+    expect(res.status).toBe(429);
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(store.listEvents('scan_blocked')[0].meta).toEqual({ reason: 'disabled' });
+  });
+});
