@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const { randomBytes } = require('crypto');
 const path = require('path');
+const { buildStats } = require('./stats');
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS tabs (
@@ -147,7 +148,11 @@ function makeStore(db) {
     }));
   }
 
-  return { createTab, getTabView, claimItem, unclaimItem, markPaid, isSettled, logEvent, countEvents, listEvents };
+  function getStats(now = Date.now()) {
+    return buildStats(db, now);
+  }
+
+  return { createTab, getTabView, claimItem, unclaimItem, markPaid, isSettled, logEvent, countEvents, listEvents, getStats };
 }
 
 const productionDb = buildDb(process.env.DB_PATH || path.join(__dirname, 'tabsplitter.db'));
