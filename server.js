@@ -19,9 +19,21 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Usage events
+// IPv6 clients usually control a whole /64, so group them by that prefix;
+// otherwise rotating addresses would sidestep the per-IP scan limit.
+function clientKey(ip) {
+  if (!ip.includes(':') || /^::ffff:\d/i.test(ip)) return ip;
+  const addr = ip.toLowerCase().split('%')[0];
+  const [head, tail = ''] = addr.split('::');
+  const h = head ? head.split(':') : [];
+  const t = addr.includes('::') && tail ? tail.split(':') : [];
+  const groups = [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill('0'), ...t];
+  return groups.slice(0, 4).map(g => (parseInt(g, 16) || 0).toString(16)).join(':') + '::/64';
+}
+
 function ipHashOf(req) {
-  const ip = req.get('Fly-Client-IP') || req.ip || 'unknown';
-  return createHash('sha256').update((process.env.IP_SALT || 'dev-salt') + ip).digest('hex').slice(0, 16);
+  const key = clientKey(req.get('Fly-Client-IP') || req.ip || 'unknown');
+  return createHash('sha256').update((process.env.IP_SALT || 'dev-salt') + key).digest('hex').slice(0, 16);
 }
 
 function track(type, req, { tabId = null, meta = null } = {}) {
@@ -54,12 +66,31 @@ function scanLimits() {
   return { perHour: positiveIntEnv('SCAN_LIMIT_PER_HOUR', 10), perDay: positiveIntEnv('SCAN_LIMIT_PER_DAY', 500) };
 }
 
+// Scans still waiting on the API have no event row yet, so they're counted here.
+// Memory is fine for this: in-flight work only exists while the machine is up.
+const inFlight = { total: 0, byIp: new Map() };
+
+function reserveScan(ipHash) {
+  inFlight.total++;
+  inFlight.byIp.set(ipHash, (inFlight.byIp.get(ipHash) || 0) + 1);
+}
+
+function releaseScan(ipHash) {
+  inFlight.total--;
+  const n = inFlight.byIp.get(ipHash) - 1;
+  if (n > 0) inFlight.byIp.set(ipHash, n); else inFlight.byIp.delete(ipHash);
+}
+
 function scanBlockReason(ipHash, now = Date.now()) {
   if (process.env.SCANS_DISABLED === '1') return 'disabled';
   const { perHour, perDay } = scanLimits();
+  const pendingIp = inFlight.byIp.get(ipHash) || 0;
   try {
-    if (store.countEvents('receipt_scan', { since: now - HOUR, ipHash, okOnly: true }) >= perHour) return 'ip_hour';
-    if (store.countEvents('receipt_scan', { since: startOfUtcDay(now), okOnly: true }) >= perDay) return 'daily_cap';
+    const hourAgo = now - HOUR;
+    if (store.countEvents('receipt_scan', { since: hourAgo, ipHash, okOnly: true }) + pendingIp >= perHour) return 'ip_hour';
+    // Failed scans are still billed; a looser cap on all attempts stops a script feeding junk.
+    if (store.countEvents('receipt_scan', { since: hourAgo, ipHash }) + pendingIp >= 3 * perHour) return 'ip_hour';
+    if (store.countEvents('receipt_scan', { since: startOfUtcDay(now), okOnly: true }) + inFlight.total >= perDay) return 'daily_cap';
   } catch (err) {
     console.error('[limits] check failed, allowing scan:', err.message);
   }
@@ -74,8 +105,14 @@ app.get('/admin',       (req, res) => res.sendFile(path.join(__dirname, 'public/
 
 // Receipt parsing
 app.post('/api/receipt/parse', (req, res, next) => {
-  const reason = scanBlockReason(ipHashOf(req));
-  if (!reason) return next();
+  const ipHash = ipHashOf(req);
+  const reason = scanBlockReason(ipHash);
+  if (!reason) {
+    // Check and reserve happen in one synchronous step, so parallel requests can't all slip through.
+    reserveScan(ipHash);
+    res.once('close', () => releaseScan(ipHash));
+    return next();
+  }
   track('scan_blocked', req, { meta: { reason } });
   res.status(429).json({ error: SCAN_BLOCKED_MESSAGES[reason] });
 }, async (req, res) => {

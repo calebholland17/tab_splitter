@@ -225,3 +225,36 @@ describe('tips', () => {
     expect(store.listEvents('tip_click')).toHaveLength(0);
   });
 });
+
+describe('scan limits under load and evasion', () => {
+  const slowScan = () => new Promise(resolve => setTimeout(() => resolve(SCAN_OK), 100));
+
+  it('parallel scans from one IP cannot exceed the hourly limit', async () => {
+    mockCreate.mockImplementation(slowScan);
+    const results = await Promise.all(Array.from({ length: 15 }, () => scan('8.8.8.8')));
+    expect(mockCreate.mock.calls.length).toBeLessThanOrEqual(10);
+    expect(results.filter(r => r.status === 429).length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('parallel scans across IPs cannot exceed the daily cap', async () => {
+    process.env.SCAN_LIMIT_PER_DAY = '3';
+    mockCreate.mockImplementation(slowScan);
+    await Promise.all(Array.from({ length: 6 }, (_, i) => scan(`8.8.9.${i}`)));
+    expect(mockCreate.mock.calls.length).toBeLessThanOrEqual(3);
+  });
+
+  it('caps total attempts (including failures) at 3x the hourly limit', async () => {
+    process.env.SCAN_LIMIT_PER_HOUR = '2';
+    mockCreate.mockRejectedValue(new Error('truncated'));
+    for (let i = 0; i < 6; i++) expect((await scan()).status).toBe(400);
+    expect((await scan()).status).toBe(429);
+    expect(mockCreate).toHaveBeenCalledTimes(6);
+  });
+
+  it('treats IPv6 addresses in the same /64 as one client', async () => {
+    process.env.SCAN_LIMIT_PER_HOUR = '1';
+    expect((await scan('2001:db8:1:2::1')).status).toBe(200);
+    expect((await scan('2001:db8:1:2:abcd:ef01:2345:6789')).status).toBe(429);
+    expect((await scan('2001:db8:1:3::1')).status).toBe(200);
+  });
+});
