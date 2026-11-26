@@ -225,3 +225,36 @@ test('receipt total mismatch warning updates live and turns green once prices ar
   await expect(status).toHaveClass(/success/);
   await expect(status).toContainText('matches');
 });
+
+test('tab created from a scanned receipt reports scanned: true', async ({ page }) => {
+  await page.route('**/api/receipt/parse', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      items: [{ name: 'Nachos', price: 20, qty: 1 }],
+      charges: { surcharge: 0, tax: 0, gratuity: 0 },
+      receiptTotal: 20,
+    }),
+  }));
+  await page.goto('/');
+  await page.setInputFiles('#receipt-library', {
+    name: 'receipt.png', mimeType: 'image/png', buffer: Buffer.from('fake-image-data'),
+  });
+  await expect(page.locator('#parse-status')).toContainText('Found');
+  await page.fill('#tab-name', 'Scanned Tab');
+  await page.fill('#payment-handle', '@tester');
+  await page.fill('#guest-names', 'Alice');
+  const [req] = await Promise.all([
+    page.waitForRequest(r => r.url().endsWith('/api/tabs') && r.method() === 'POST'),
+    page.click('#create-btn'),
+  ]);
+  expect(req.postDataJSON().scanned).toBe(true);
+});
+
+test('manually entered tab reports scanned: false', async ({ page }) => {
+  const [req] = await Promise.all([
+    page.waitForRequest(r => r.url().endsWith('/api/tabs') && r.method() === 'POST'),
+    createTab(page),
+  ]);
+  expect(req.postDataJSON().scanned).toBe(false);
+});

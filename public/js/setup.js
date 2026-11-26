@@ -9,6 +9,7 @@ function esc(s) {
 
 let items = [];
 let receiptTotal = null;
+let scanned = false; // true once a receipt scan succeeds; reported on tab creation for usage stats
 
 const DRAFT_KEY = 'tabsplitter_draft';
 
@@ -17,6 +18,7 @@ function saveState() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
       items,
       receiptTotal,
+      scanned,
       tabName:       document.getElementById('tab-name').value,
       paymentHandle: document.getElementById('payment-handle').value,
       surcharge:     document.getElementById('charge-surcharge').value,
@@ -34,6 +36,7 @@ function loadState() {
     const s = JSON.parse(raw);
     if (Array.isArray(s.items))       items = s.items.map(i => ({ ...i, splitMode: !!i.splitMode }));
     if (s.receiptTotal != null)       receiptTotal = Number(s.receiptTotal);
+    if (s.scanned)                    scanned = true;
     if (s.tabName)                    document.getElementById('tab-name').value = s.tabName;
     if (s.paymentHandle)              document.getElementById('payment-handle').value = s.paymentHandle;
     if (s.surcharge != null)          document.getElementById('charge-surcharge').value = s.surcharge;
@@ -48,6 +51,7 @@ window.clearDraft = function () {
   localStorage.removeItem(DRAFT_KEY);
   items = [];
   receiptTotal = null;
+  scanned = false;
   document.getElementById('tab-name').value = '';
   document.getElementById('payment-handle').value = '';
   document.getElementById('charge-surcharge').value = '0';
@@ -262,6 +266,7 @@ async function handleReceiptFile(file) {
     }
 
     receiptTotal = data.receiptTotal != null ? Number(data.receiptTotal) : null;
+    scanned = true;
 
     renderItems(); // also calls recalcTotal() -> updateTotalCheck()
     saveState();
@@ -321,7 +326,7 @@ window.createTab = async () => {
     const res  = await fetch('/api/tabs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, paymentHandle, paymentPlatform, charges, guests, items: itemsToSend }),
+      body: JSON.stringify({ name, paymentHandle, paymentPlatform, charges, guests, items: itemsToSend, scanned }),
     });
     const data = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
     if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);

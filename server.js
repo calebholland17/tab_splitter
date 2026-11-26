@@ -1,4 +1,4 @@
-if (process.env.NODE_ENV !== 'production') require('dotenv').config();
+if (!['production', 'test'].includes(process.env.NODE_ENV)) require('dotenv').config();
 const express = require('express');
 const path    = require('path');
 const multer  = require('multer');
@@ -6,6 +6,9 @@ const Anthropic = require('@anthropic-ai/sdk');
 const {
   createTab, getTabView, claimItem, unclaimItem, markPaid, isSettled,
 } = require('./db');
+const { createHash, timingSafeEqual } = require('crypto');
+// Module object (not destructured) so new event/stats calls can be spied on in tests.
+const store = require('./db');
 
 const app    = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -13,6 +16,24 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Usage events
+function ipHashOf(req) {
+  const ip = req.get('Fly-Client-IP') || req.ip || 'unknown';
+  return createHash('sha256').update((process.env.IP_SALT || 'dev-salt') + ip).digest('hex').slice(0, 16);
+}
+
+function track(type, req, { tabId = null, meta = null } = {}) {
+  try {
+    store.logEvent(type, { tabId, ipHash: ipHashOf(req), meta });
+  } catch (err) {
+    console.error(`[events] failed to log ${type}:`, err.message);
+  }
+}
+
+function scanMeta(ok, usage, extra = {}) {
+  return { ok, items: 0, inTok: usage?.input_tokens || 0, outTok: usage?.output_tokens || 0, ...extra };
+}
 
 // Pages
 app.get('/',            (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
@@ -24,6 +45,7 @@ app.post('/api/receipt/parse', async (req, res) => {
   upload.single('image')(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+    let usage = null;
     try {
       const response = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
@@ -46,13 +68,16 @@ app.post('/api/receipt/parse', async (req, res) => {
           ],
         }],
       });
+      usage = response.usage;
       const raw = response.content[0].text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
       const parsed = JSON.parse(raw);
       const items = parsed.items || parsed; // fallback if model returns bare array
       const charges = parsed.charges || { surcharge: 0, tax: 0, gratuity: 0 };
       const receiptTotal = parsed.total || null;
+      track('receipt_scan', req, { meta: scanMeta(true, usage, { items: Array.isArray(items) ? items.length : 0 }) });
       res.json({ items, charges, receiptTotal });
     } catch (e) {
+      track('receipt_scan', req, { meta: scanMeta(false, usage, { error: String(e.message).slice(0, 200) }) });
       res.status(400).json({ error: e.message });
     }
   });
@@ -63,6 +88,7 @@ app.post('/api/tabs', (req, res) => {
   const { name, paymentHandle, paymentPlatform, charges, guests, items } = req.body || {};
   try {
     const tabId = createTab({ name, paymentHandle, paymentPlatform, charges, guests, items });
+    track('tab_created', req, { tabId, meta: { scanned: req.body.scanned === true } });
     res.json({ tabId });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -104,7 +130,9 @@ app.post('/api/tabs/:tabId/unclaim', (req, res) => {
 app.post('/api/tabs/:tabId/paid', (req, res) => {
   const { guestId } = req.body || {};
   try {
-    markPaid(req.params.tabId, guestId);
+    if (markPaid(req.params.tabId, guestId)) {
+      track('guest_paid', req, { tabId: req.params.tabId, meta: { guestId } });
+    }
     res.json({ tab: getTabView(req.params.tabId), settled: isSettled(req.params.tabId) });
   } catch (err) {
     res.status(400).json({ error: err.message });
