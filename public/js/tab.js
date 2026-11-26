@@ -7,16 +7,6 @@ const SESSION_KEY = `tab_identity_${tabId}`;
 let myGuestId = sessionStorage.getItem(SESSION_KEY) || null;
 let identityLocked = !!myGuestId;
 
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-function venmoUrl(handle, amount, note) {
-  const h = handle.replace(/^@/, '');
-  if (isMobile) {
-    return `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(h)}&amount=${Number(amount).toFixed(2)}&note=${encodeURIComponent(note)}`;
-  }
-  return `https://venmo.com/u/${encodeURIComponent(h)}`;
-}
-
 function fmt(n) { return '$' + Number(n).toFixed(2); }
 
 function esc(s) {

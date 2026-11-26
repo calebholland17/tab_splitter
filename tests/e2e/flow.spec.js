@@ -279,3 +279,52 @@ test.describe('admin dashboard', () => {
     await expect(page.locator('#admin-grid')).toBeHidden();
   });
 });
+
+test.describe('tip row', () => {
+  test('shows $1 / $2 / Other linking to the tip Venmo profile on desktop', async ({ page }) => {
+    await createTab(page);
+    const row = page.locator('#tip-row');
+    await expect(row).toBeVisible();
+    await expect(row).toContainText('Leave a tip!');
+    await expect(row.locator('[data-amount="1"]')).toHaveAttribute('href', 'https://venmo.com/u/Caleb-Holland-3');
+    await expect(row.locator('[data-amount="other"]')).toHaveText('Other');
+  });
+
+  test('records a tip tap', async ({ page }) => {
+    await page.route('https://venmo.com/**', route => route.fulfill({ status: 200, body: 'venmo' }));
+    await createTab(page);
+    const [req] = await Promise.all([
+      page.waitForRequest(r => r.url().endsWith('/api/events/tip')),
+      page.locator('#tip-row [data-amount="2"]').click(),
+    ]);
+    expect(JSON.parse(req.postData())).toMatchObject({ amount: 2 });
+  });
+
+  test('tip row stays hidden when no handle is configured', async ({ page }) => {
+    await page.route('**/api/config', route => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ tipHandle: null }),
+    }));
+    await createTab(page);
+    await expect(page.locator('#guest-url')).toContainText('/tab/');
+    await expect(page.locator('#tip-row')).toBeHidden();
+  });
+});
+
+test.describe('tip row on mobile', () => {
+  test.use({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148' });
+
+  test('deep-links into the Venmo app with the amount pre-filled', async ({ page }) => {
+    // Create via API: the setup form's keypad behaves differently under a mobile UA.
+    const res = await page.request.post('/api/tabs', { data: {
+      name: 'Mobile Tab', paymentHandle: '@tester', paymentPlatform: 'Venmo',
+      charges: { subtotal: 10, surcharge: 0, tax: 0, gratuity: 0, total: 10 },
+      guests: ['Alice'], items: [{ name: 'Beer', price: 10, qty: 1 }],
+    } });
+    const { tabId } = await res.json();
+    await page.goto(`/host/${tabId}`);
+    await expect(page.locator('#tip-row [data-amount="1"]'))
+      .toHaveAttribute('href', 'venmo://paycharge?txn=pay&recipients=Caleb-Holland-3&amount=1.00&note=TabSplitter%20tip');
+    await expect(page.locator('#tip-row [data-amount="other"]'))
+      .toHaveAttribute('href', 'venmo://paycharge?txn=pay&recipients=Caleb-Holland-3&note=TabSplitter%20tip');
+  });
+});

@@ -387,3 +387,16 @@ body {
 .chart rect { fill: var(--green); }
 .chart .axis { stroke: var(--border); }
 .chart .tick { font-size: 9px; fill: var(--muted); }
+
+/* Tip row (host page) */
+.tip-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  margin: -8px 0 20px; padding: 10px 14px;
+  border: 1px dashed var(--border); border-radius: 10px;
+}
+.tip-row[hidden] { display: none; }
+.tip-label { font-size: 13px; font-weight: 600; }
+.tip-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.tip-buttons { display: flex; gap: 8px; }
+.tip-btn { text-decoration: none; min-width: 52px; text-align: center; }

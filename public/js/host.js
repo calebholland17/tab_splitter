@@ -78,6 +78,27 @@ function poll() {
 poll();
 pollInterval = setInterval(poll, 2000);
 
+const TIP_NOTE = 'TabSplitter tip';
+
+function setupTips() {
+  fetch('/api/config')
+    .then(r => r.json())
+    .then(({ tipHandle }) => {
+      if (!tipHandle) return;
+      document.querySelectorAll('#tip-row .tip-btn').forEach(link => {
+        const amount = link.dataset.amount === 'other' ? null : Number(link.dataset.amount);
+        link.href = venmoUrl(tipHandle, amount, TIP_NOTE);
+        link.addEventListener('click', () => {
+          const body = JSON.stringify({ tabId, amount: amount ?? 'other' });
+          try { navigator.sendBeacon('/api/events/tip', new Blob([body], { type: 'application/json' })); } catch (e) {}
+        });
+      });
+      document.getElementById('tip-row').hidden = false;
+    })
+    .catch(() => {});
+}
+setupTips();
+
 window.openHelp = () => {
   document.getElementById('help-overlay').classList.add('visible');
   document.body.style.overflow = 'hidden';

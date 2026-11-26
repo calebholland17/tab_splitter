@@ -201,3 +201,27 @@ describe('admin stats', () => {
     expect(res.text).toContain('id="growth"');
   });
 });
+
+describe('tips', () => {
+  it('exposes the tip handle via /api/config (null when unset)', async () => {
+    expect((await request(app).get('/api/config')).body).toEqual({ tipHandle: null });
+    process.env.TIP_VENMO_HANDLE = 'Caleb-Holland-3';
+    expect((await request(app).get('/api/config')).body).toEqual({ tipHandle: 'Caleb-Holland-3' });
+  });
+
+  it('logs a tip tap for a valid amount and tab', async () => {
+    const { body: { tabId } } = await request(app).post('/api/tabs').send(TAB_BODY);
+    for (const amount of [1, 2, 'other']) {
+      expect((await request(app).post('/api/events/tip').send({ tabId, amount })).status).toBe(204);
+    }
+    expect(store.listEvents('tip_click').map(e => e.meta.amount)).toEqual(['other', 2, 1]);
+  });
+
+  it('rejects bad amounts and unknown tabs without logging', async () => {
+    const { body: { tabId } } = await request(app).post('/api/tabs').send(TAB_BODY);
+    for (const body of [{ tabId, amount: 3 }, { tabId, amount: '1' }, { tabId }, { tabId: 'nope00', amount: 1 }, {}]) {
+      expect((await request(app).post('/api/events/tip').send(body)).status).toBe(400);
+    }
+    expect(store.listEvents('tip_click')).toHaveLength(0);
+  });
+});

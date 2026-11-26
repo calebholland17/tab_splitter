@@ -176,6 +176,22 @@ app.post('/api/tabs/:tabId/paid', (req, res) => {
   }
 });
 
+// Public client config
+app.get('/api/config', (req, res) => {
+  res.json({ tipHandle: process.env.TIP_VENMO_HANDLE || null });
+});
+
+// Tip button taps (sent with navigator.sendBeacon from the host page)
+const TIP_AMOUNTS = [1, 2, 'other'];
+app.post('/api/events/tip', (req, res) => {
+  const { tabId, amount } = req.body || {};
+  if (!TIP_AMOUNTS.includes(amount) || typeof tabId !== 'string' || !getTabView(tabId)) {
+    return res.status(400).json({ error: 'Invalid tip event' });
+  }
+  track('tip_click', req, { tabId, meta: { amount } });
+  res.status(204).end();
+});
+
 // Admin dashboard (off unless ADMIN_TOKEN is set)
 function isAdmin(req, res) {
   const token = process.env.ADMIN_TOKEN;
